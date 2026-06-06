@@ -6,6 +6,11 @@ import requests
 from io import StringIO
 from datetime import datetime
 
+# ... [USCRN_STATION_MAP dictionary stays here] ...
+
+@st.cache_data(ttl=3600)  # Cache the result for 1 hour to prevent API throttling
+def fetch_rural_baseline(target_icao):
+
 # 1. Map target NWS City stations to their nearest pristine rural USCRN station
 # USCRN stations are identified by their WBAN number or site name.
 USCRN_STATION_MAP = {

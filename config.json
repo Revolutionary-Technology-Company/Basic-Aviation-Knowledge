@@ -3,71 +3,21 @@
     "delta_t_station": 5.5,
     "tau_crit": 1000.0,
     "z_crit": 1000.0
-  }
-}
-{
+  },
   "airport_registry": {
-    "SFO": {
-      "delta_t_station": 6.0,
-      "z_crit": 1000.0,
-      "tau_crit": 1.5
-    },
-    "ATL": {
-      "delta_t_station": 1.5,
-      "elevation_ft": 1050
-    },
-    "SEA": {
-      "delta_t_station": -2.0,
-      "v_crit": 15.0
-    },
-    "PHX": {
-      "delta_t_station": 4.5,
-      "tau_thermal": 3.2
-    },
-    "ORD": {
-      "delta_t_station": 1.0,
-      "x_distance_miles": 13.5
-    }
-  }
-}
-{
+    "SFO": { "delta_t_station": 6.0, "z_crit": 1000.0, "tau_crit": 1.5 },
+    "ATL": { "delta_t_station": 1.5, "elevation_ft": 1050 },
+    "SEA": { "delta_t_station": -2.0, "v_crit": 15.0 },
+    "PHX": { "delta_t_station": 4.5, "tau_thermal": 3.2 },
+    "ORD": { "delta_t_station": 1.0, "x_distance_miles": 13.5 }
+  },
   "urban_heat_island_registry": {
-    "NYC": {
-      "comment": "New York City / Central Park Target",
-      "h_c_modifier": 0.35,
-      "base_albedo_a": 0.15,
-      "anthropogenic_flux_QF": 45.2
-    },
-    "PHX": {
-      "comment": "Phoenix Downtown Target",
-      "h_c_modifier": 0.85,
-      "base_albedo_a": 0.22,
-      "anthropogenic_flux_QF": 60.0
-    }
-  }
-}
-{
+    "NYC": { "comment": "New York City / Central Park Target", "h_c_modifier": 0.35, "base_albedo_a": 0.15, "anthropogenic_flux_QF": 45.2 },
+    "PHX": { "comment": "Phoenix Downtown Target", "h_c_modifier": 0.85, "base_albedo_a": 0.22, "anthropogenic_flux_QF": 60.0 }
+  },
   "nws_sensor_registry": {
-    "NYC": {
-      "station_name": "Central Park",
-      "icao": "KNYC",
-      "latitude": 40.77889,
-      "longitude": -73.96917,
-      "elevation_ft": 154
-    },
-    "CHI": {
-      "station_name": "O'Hare International Airport",
-      "icao": "KORD",
-      "latitude": 41.97972,
-      "longitude": -87.90444,
-      "elevation_ft": 666
-    },
-    "PHX": {
-      "station_name": "Sky Harbor International Airport",
-      "icao": "KPHX",
-      "latitude": 33.4278,
-      "longitude": -112.00347,
-      "elevation_ft": 1135
-    }
+    "NYC": { "station_name": "Central Park", "icao": "KNYC", "latitude": 40.77889, "longitude": -73.96917, "elevation_ft": 154 },
+    "CHI": { "station_name": "O'Hare International Airport", "icao": "KORD", "latitude": 41.97972, "longitude": -87.90444, "elevation_ft": 666 },
+    "PHX": { "station_name": "Sky Harbor International Airport", "icao": "KPHX", "latitude": 33.4278, "longitude": -112.00347, "elevation_ft": 1135 }
   }
 }

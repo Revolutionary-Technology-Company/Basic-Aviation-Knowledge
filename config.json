@@ -5,3 +5,28 @@
     "z_crit": 1000.0
   }
 }
+{
+  "airport_registry": {
+    "SFO": {
+      "delta_t_station": 6.0,
+      "z_crit": 1000.0,
+      "tau_crit": 1.5
+    },
+    "ATL": {
+      "delta_t_station": 1.5,
+      "elevation_ft": 1050
+    },
+    "SEA": {
+      "delta_t_station": -2.0,
+      "v_crit": 15.0
+    },
+    "PHX": {
+      "delta_t_station": 4.5,
+      "tau_thermal": 3.2
+    },
+    "ORD": {
+      "delta_t_station": 1.0,
+      "x_distance_miles": 13.5
+    }
+  }
+}

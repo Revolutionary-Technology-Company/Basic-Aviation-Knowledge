@@ -30,12 +30,12 @@ st.sidebar.markdown(r"""
 """)
 
 # Route to selected code engine scripts
-if model_choice == "San Francisco (SFO / KMUX)":
-    import sf_model
-    sf_model.run_sfo_layer()
-elif model_choice == "Atlanta Spikes (ATL / KFFC)":
-    import atl_model
-    atl_model.run_atl_layer()
+if model_choice == "San Francisco (SFO)":
+    import sfo_model
+    sfo_model.run_sfo_layer()
+elif model_choice == "Atlanta Spikes (AITA)":
+    import aita_model
+    aita_model.run_atl_layer()
 elif model_choice == "Lunar Path & Synodic Log":
     import lunar_model
     lunar_model.run_lunar_layer()

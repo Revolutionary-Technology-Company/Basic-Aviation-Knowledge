@@ -46,7 +46,7 @@ def fetch_rural_baseline(target_icao):
                    "LONGITUDE", "LATITUDE", "T_CALC", "T_HR_AVG", "T_MAX", "T_MIN", "P_CALC"]
         
         # Read the raw text into a pandas DataFrame
-        df = pd.read_csv(StringIO(response.text), sep="\s+", names=columns, usecols=["LST_DATE", "LST_TIME", "T_CALC"], na_values="-9999.0")
+        df = pd.read_csv(StringIO(response.text), sep=r"\s+", names=columns, usecols=["LST_DATE", "LST_TIME", "T_CALC"], na_values="-9999.0")
         
         # Drop any rows where temperature data is missing or offline
         df = df.dropna(subset=["T_CALC"])

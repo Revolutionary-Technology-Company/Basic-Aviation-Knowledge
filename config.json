@@ -30,3 +30,19 @@
     }
   }
 }
+{
+  "urban_heat_island_registry": {
+    "NYC": {
+      "comment": "New York City / Central Park Target",
+      "h_c_modifier": 0.35,
+      "base_albedo_a": 0.15,
+      "anthropogenic_flux_QF": 45.2
+    },
+    "PHX": {
+      "comment": "Phoenix Downtown Target",
+      "h_c_modifier": 0.85,
+      "base_albedo_a": 0.22,
+      "anthropogenic_flux_QF": 60.0
+    }
+  }
+}

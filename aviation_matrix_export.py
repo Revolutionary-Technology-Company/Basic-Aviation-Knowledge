@@ -1,7 +1,17 @@
-import csv
-from datetime import datetime
+# --- PRIMARY ENGINE: [Model Name] ---
+import streamlit as st
 import numpy as np
+import pandas as pd
+import csv
+import matplotlib.pyplot as plt
+from datetime import datetime
 
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
 
 def run_multi_scenario_matrix_export(telemetry_override=None):
     print("=================================================================")

@@ -6,7 +6,7 @@ from astropy.time import Time
 import numpy as np
 
 
-def get_user_inputs():
+def get_user_inputs(telemetry_override=None):
     print("--- GPS Station Lunar Log Configurator ---")
     lat = float(input("Enter Latitude in decimal degrees (e.g., 47.6062): "))
     lon = float(input("Enter Longitude in decimal degrees (e.g., -122.3321): "))

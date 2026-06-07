@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def run_phx_layer():
+def run_phx_layer(telemetry_override=None):
     st.header("🏜️ Phoenix (PHX / KIWA Area) Thermal Mass Retention Model")
     st.markdown(r"### Equation: $T_{\text{PHX}}(t) = T_{\text{desert}} + \Delta T_{\text{uhi\_max}} \cdot \left(1 - \exp\left(-\frac{t}{\tau_{\text{thermal}}}\right)\right) + \Delta T_{\text{station}}$")
     

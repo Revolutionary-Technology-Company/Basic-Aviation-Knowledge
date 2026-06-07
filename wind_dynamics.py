@@ -1,5 +1,18 @@
 import numpy as np
 
+# --- PRIMARY ENGINE: [Model Name] ---
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
+
 def calculate_density_and_cooling(telemetry_override=None, temp_c, wind_mph, relative_humidity=0.50):
     """
     Solves the combined gas density and convective wind cooling equations

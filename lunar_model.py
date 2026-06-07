@@ -6,6 +6,13 @@ import astropy.coordinates as coord
 import astropy.units as u
 from astropy.time import Time
 
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
+
 def run_lunar_layer(telemetry_override=None):
     st.header("🌙 Celestial Tracking Matrix - Topocentric Lunar Path Generator")
     st.markdown(r"Calculates the topocentric tracking path vectors ($\vec{R}_{\text{topo}}$) relative to custom digital GPS receiver antennas.")

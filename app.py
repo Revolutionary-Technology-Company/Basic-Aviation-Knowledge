@@ -1,180 +1,123 @@
-import live_telemetry
-from waypoint_manager import WaypointManager
-# Initialize the manager globally
-wp_manager = WaypointManager()
-import ai_pirep
+# app.py
 import streamlit as st
+import telemetry_link
+from waypoint_manager import WaypointManager
+from flight_control_dynamics import FlightControlDynamics
 
-# Inside your main application loop
-def guidance_loop(aircraft_state, waypoint):
-    # 1. Sense acceleration/motion
-    accel = get_sensors_accelerometer() 
-    current_force = calculate_force_vectors(accel, aircraft_state.mass)
-    
-    # 2. Recalculate if Dynamic Mode is ON
-    if flight_computer.dynamic:
-        commands = flight_computer.calculate_required_attitude(
-            aircraft_state.heading, 
-            waypoint.heading, 
-            waypoint.elevation,
-            aircraft_state.altitude,
-            aircraft_state.ground_speed
-        )
-        return commands
-
-# Initialize
+# --- 1. GLOBAL INITIALIZATION ---
+# Initialize the Centralized Data Bus and Core Navigation Engines
 wp_manager = WaypointManager()
 computer = FlightControlDynamics(mode="CIVILIAN")
 
-st.title("✈️ Aviation Knowledge Engine")
+st.set_page_config(page_title="Aviation Knowledge Engine", layout="wide")
+st.title("✈️ Aviation Knowledge Engine - Flight Control Dashboard")
 
-# --- WAYPOINT REGISTRATION SIDEBAR ---
+# --- 2. SIDEBAR: WAYPOINT REGISTRATION & MODE ---
 with st.sidebar:
     st.header("Waypoint Registration")
-    wp_name = st.text_input("Waypoint Name")
-    lat = st.number_input("Latitude", value=0.0)
-    lon = st.number_input("Longitude", value=0.0)
-    alt = st.number_input("Target Altitude", value=1500)
-    heading = st.number_input("Target Heading", value=180)
+    wp_name = st.text_input("Waypoint Name", value="KSEA_Arrival")
+    lat = st.number_input("Latitude", value=47.4502, format="%.6f")
+    lon = st.number_input("Longitude", value=-122.3088, format="%.6f")
+    alt = st.number_input("Target Altitude (ft)", value=1500)
+    heading = st.number_input("Target Heading", value=160)
     
     if st.button("Register Waypoint"):
         wp_manager.register_waypoint(wp_name, lat, lon, alt, heading)
         st.success(f"Registered {wp_name}")
-        
+    
     st.markdown("---")
-    st.subheader("Flight Mode")
+    st.subheader("Flight Mode Control")
     mode = st.radio("Maneuver Profile", ["CIVILIAN", "SPORT"])
     computer.set_mode(mode=mode)
     
-# --- DYNAMICS MONITOR ---
-st.subheader("Live Trim Correction")
-active_wp = wp_manager.get_active_waypoint(index=0)
-if active_wp:
-    st.write(f"**Navigating to:** {active_wp.name}")
-    # Compute correction
-    correction = computer.calculate_required_attitude(
-        current_heading=170, # Placeholder for live telemetry
-        target_heading=active_wp.target_heading,
-        target_elevation=active_wp.alt,
-        current_alt=1450,
-        ground_speed=250
-    )
-    st.json(correction)
-else:
-    st.warning("No waypoint active.")
-    
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Basic Aviation Knowledge", layout="wide")
+    st.markdown("---")
+    st.caption("Centralized Data Bus: ACTIVE")
 
-st.title("✈️ Basic Aviation Knowledge - Master Control")
-
-# --- GLOBAL TELEMETRY ---
-# ... (Keep your existing Telemetry Logic here) ...
-live_data = None 
-# ... 
-
-# --- 3. Main Dashboard: Performance Advisory ---
-st.subheader("Performance Envelope Advisory")
+# --- 3. MAIN DASHBOARD: PERFORMANCE ADVISORY ---
+st.subheader("Predictive Performance Envelope")
 active_wp = wp_manager.get_active_waypoint(index=0)
 
 if active_wp:
-    # Get Safety Advisory
-    # Using hardcoded current airspeed (110kts) and bank (turn_radius * 10) for demo
+    # Get Safety Advisory (using a simulated 110kts current airspeed for the demo)
     safety = computer.analyze_maneuver_safety(current_airspeed=110, target_bank_deg=30)
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Target Heading", active_wp.target_heading)
-        st.metric("Stall Margin", f"{safety['margin']} kts")
-    
+        st.metric("Active Navigation Fix", active_wp.name)
+        st.metric("Target Heading", f"{active_wp.target_heading}°")
     with col2:
+        st.metric("Target Altitude", f"{active_wp.alt} ft")
+        st.metric("Dynamic Stall Margin", f"{safety['margin']} kts")
+    with col3:
         if safety['is_unsafe']:
-            st.error("⚠️ ADVISORY: Maneuver breaches safety envelope.")
+            st.error("⚠️ ADVISORY: Planned maneuver breaches structural safety envelope.")
         else:
-            st.success("✅ Maneuver within safe performance envelope.")
+            st.success("✅ Maneuver safely within calculated performance envelope.")
 else:
-    st.info("No waypoints registered. Use sidebar to add a navigation point.")
-    
-# --- MODEL SELECTION ---
-# This list now includes every identified potential "runnable" module
-model_choice = st.sidebar.selectbox("Choose Atmospheric Model Layer:", [
-    "Atlanta Spikes (AITA)",
-    "Atlanta Heat (AITA Model)",
-    "San Francisco (SFO Climate)",
-    "Seattle (SEA Convergence)",
-    "Phoenix (PHX Thermal)",
-    "Chicago (ORD Lake Breeze)",
-    "Rossby Wave Dynamics",
-    "Lunar Path & Synodic Log",
-    "Fog Thermodynamics",
+    st.info("No active waypoints. Use the sidebar to register a navigation fix.")
+
+st.markdown("---")
+
+# --- 4. ENVIRONMENT & PHYSICS ENGINES ---
+st.subheader("Atmospheric & Physics Matrix Integration")
+
+model_choice = st.selectbox("Select Core Prediction Engine to Run", [
+    "Wind Dynamics & Cooling Index",
+    "Fog Thermodynamics Matrix",
     "Cloud Radiative Flux Balance",
-    "Cloud Temperature Drop",
-    "Structural Aircraft Icing Hazard Matrix",
-    "Wind Dynamics Matrix",
-    "Space Weather Engine"
+    "Cloud Thermodynamics & Trajectories",
+    "Space Weather Astronomical Tracker",
+    "Lunar Ephemeris Topocentric Path",
+    "Structural Aircraft Icing Hazard"
 ])
 
-# --- MASTER ROUTING TABLE ---
-# Helper modules (like aviation_physics) are NOT here; 
-# they are imported INSIDE the models below.
+if st.button("Execute High-Performance Engine"):
+    with st.spinner("Compiling physics matrix and injecting into global state..."):
+        try:
+            if model_choice == "Wind Dynamics & Cooling Index":
+                import wind_dynamics
+                results = wind_dynamics.run_wind_layer()
+                st.json(results)
+                
+            elif model_choice == "Fog Thermodynamics Matrix":
+                import fog_thermodynamics
+                results = fog_thermodynamics.run_fog_layer()
+                st.json(results)
+                
+            elif model_choice == "Cloud Radiative Flux Balance":
+                import radiation_model
+                results = radiation_model.run_radiation_layer()
+                st.json(results)
+                
+            elif model_choice == "Cloud Thermodynamics & Trajectories":
+                import cloud_model
+                results = cloud_model.run_cloud_layer()
+                st.json(results)
+                
+            elif model_choice == "Space Weather Astronomical Tracker":
+                import space_weather_engine
+                results = space_weather_engine.run_space_layer()
+                st.json(results)
+                
+            elif model_choice == "Lunar Ephemeris Topocentric Path":
+                import lunar_model
+                results = lunar_model.run_lunar_layer(telemetry_override={"lat": 47.6062, "lon": -122.3321, "elevation_m": 45.0, "year": 2026})
+                st.json(results)
+                
+            elif model_choice == "Structural Aircraft Icing Hazard":
+                import aviation_icing
+                # Providing mock environment data for the UI trigger
+                env_data = {"temp_c": -5, "rh_pct": 85, "rain_mm_hr": 2.5}
+                telemetry = {"elevation_ft": 5000}
+                pirep, mass = aviation_icing.get_live_icing_pirep_data(telemetry, env_data)
+                st.write(f"**Calculated PIREP:** {pirep}")
+                st.write(f"**Mass Accretion:** {mass:.2f} kg/hr")
+                
+            st.success("✅ Engine execution complete. Data injected into Boeing Global State.")
+        except Exception as e:
+            st.error(f"Engine execution failed: {e}")
 
-if model_choice == "Atlanta Spikes (AITA)":
-    import AITA_spikes
-    AITA_spikes.run_atl_layer(telemetry_override=live_data)
+st.markdown("---")
 
-elif model_choice == "Atlanta Heat (AITA Model)":
-    import aita_model
-    aita_model.run_atl_layer(telemetry_override=live_data)
-
-elif model_choice == "San Francisco (SFO Climate)":
-    import sfo_model
-    sfo_model.run_sfo_layer(telemetry_override=live_data)
-
-elif model_choice == "Seattle (SEA Convergence)":
-    import sea_model
-    sea_model.run_sea_layer(telemetry_override=live_data)
-
-elif model_choice == "Phoenix (PHX Thermal)":
-    import phx_model
-    phx_model.run_phx_layer(telemetry_override=live_data)
-
-elif model_choice == "Chicago (ORD Lake Breeze)":
-    import ord_model
-    ord_model.run_ord_layer(telemetry_override=live_data)
-
-elif model_choice == "Rossby Wave Dynamics":
-    import rossby_model
-    rossby_model.run_rossby_layer(telemetry_override=live_data)
-
-elif model_choice == "Lunar Path & Synodic Log":
-    import lunar_model
-    lunar_model.run_lunar_layer()
-
-elif model_choice == "Fog Thermodynamics":
-    import fog_thermodynamics
-    fog_thermodynamics.run_fog_layer(telemetry_override=live_data)
-
-elif model_choice == "Cloud Radiative Flux Balance":
-    import radiation_model
-    radiation_model.run_radiation_layer(telemetry_override=live_data)
-
-elif model_choice == "Cloud Temperature Drop":
-    import cloud_temperature_drop
-    cloud_temperature_drop.run_cloud_temp_layer(telemetry_override=live_data)
-
-elif model_choice == "Structural Aircraft Icing Hazard Matrix":
-    import aviation_icing
-    aviation_icing.run_icing_matrix(telemetry_override=live_data)
-
-elif model_choice == "Wind Dynamics Matrix":
-    import wind_dynamics
-    wind_dynamics.run_wind_layer(telemetry_override=live_data)
-
-elif model_choice == "Space Weather Engine":
-    import space_weather_engine
-    space_weather_engine.run_space_layer()
-    
-# --- FOOTER & DEDICATIONS ---
-st.sidebar.markdown("---")
-st.sidebar.caption("Dedicated to the faculty at [Green River College](https://www.greenriver.edu/students/academics/areas-of-interest/program-maps/trades-industrial-tech-aviation-natural-resources/aviation-technology/index.html)")
-st.sidebar.caption("Professional Legal Reference: [Fox Rothschild Aviation](https://www.foxrothschild.com/aviation)")
+# --- 5. BOEING SYSTEM EXPORT ---
+st.subheader("Flight

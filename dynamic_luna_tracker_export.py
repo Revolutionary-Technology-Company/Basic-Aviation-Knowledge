@@ -1,4 +1,5 @@
 # --- PRIMARY ENGINE: [Model Name] ---
+import multiprocessing as mp
 import numpy as np
 from numba import njit
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations

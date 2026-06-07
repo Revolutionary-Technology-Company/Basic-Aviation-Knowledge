@@ -4,7 +4,7 @@
 import pandas as pd
 import io
 
-def load_volumetric_radar_data(raw_text_data):
+def load_volumetric_radar_data(telemetry_override=None, raw_text_data):
     """
     Parses the raw attribute table containing radar beam heights and trackpoints.
     This creates a 3D profile of the radar coverage for each ICAO station.

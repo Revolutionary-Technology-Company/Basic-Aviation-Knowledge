@@ -1,7 +1,6 @@
 import numpy as np
 
 # --- PRIMARY ENGINE: [Model Name] ---
-import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,7 +15,8 @@ import aerodynamic_matrix      # Lift/Drag logic
 from numba import njit
 
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
-    
+import streamlit as st
+
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
     print("🚀 NVIDIA GPU Acceleration Engaged")

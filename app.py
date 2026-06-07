@@ -90,3 +90,8 @@ elif model_choice == "Wind Dynamics Matrix":
 elif model_choice == "Space Weather Engine":
     import space_weather_engine
     space_weather_engine.run_space_layer()
+    
+# --- FOOTER & DEDICATIONS ---
+st.sidebar.markdown("---")
+st.sidebar.caption("Dedicated to the faculty at [Green River College](https://www.greenriver.edu/students/academics/areas-of-interest/program-maps/trades-industrial-tech-aviation-natural-resources/aviation-technology/index.html)")
+st.sidebar.caption("Professional Legal Reference: [Fox Rothschild Aviation](https://www.foxrothschild.com/aviation)")

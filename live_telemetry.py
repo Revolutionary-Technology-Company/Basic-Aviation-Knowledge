@@ -5,6 +5,7 @@ import serial
 import pynmea2
 import time
 import os
+import sys
 
 # --- PRIMARY ENGINE: [Model Name] ---
 import streamlit as st
@@ -19,7 +20,37 @@ import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 
+# Attempt to load iOS-specific location module
+try:
+    import location
+    IS_IOS = True
+except ImportError:
+    IS_IOS = False
+
+# Only import serial if we are NOT on iOS
+if not IS_IOS:
+    import serial
+    import pynmea2
+
 def get_live_position(telemetry_override=None, com_port="/dev/ttyUSB0", baudrate=9600):
+    """
+    Automatically detects the platform and fetches telemetry.
+    """
+    if IS_IOS:
+        # iOS/Pyto logic using iPad internal GPS
+        try:
+            loc = location.get_location()
+            return {
+                "status": "SUCCESS",
+                "latitude": loc.latitude,
+                "longitude": loc.longitude,
+                "elevation_ft": loc.altitude * 3.28084,
+                "satellites_locked": "Internal GPS"
+            }
+        except Exception:
+            return {"status": "FAIL", "reason": "Location services disabled"}
+
+    else:
     """
     Optimized for Pydroid/Android. Uses an aggressive timeout and 
     checks for device presence before attempting to stream data.

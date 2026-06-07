@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def simulate_sf_climate():
+def simulate_sf_climate(telemetry_override=None):
     print("--- San Francisco Climate Superposition Model ---")
     start_year = int(input("Enter starting year (e.g., 1850): "))
     end_year = int(input("Enter ending year (e.g., 2026): "))

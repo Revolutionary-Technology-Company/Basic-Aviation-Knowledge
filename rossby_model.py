@@ -13,6 +13,7 @@ import aviation_telemetry      # Data flow
 import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
+import telemetry_link
 
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
@@ -20,7 +21,7 @@ try:
 except ImportError:
     import numpy as np # Fallback to standard CPU math
     print("⚡ Using CPU (NVIDIA acceleration not detected)")
-    
+
 def run_rossby_layer(telemetry_override=None):
     st.header("🌊 Rossby Wave Phase Speed & Jet Stream Configuration Engine")
     st.markdown(r"### Mathematical Core Planetary Dynamics Engine:")
@@ -133,3 +134,6 @@ def run_rossby_layer(telemetry_override=None):
             file_name=f"rossby_wave_planetary_steering_matrix_{station_lat}N.csv",
             mime="text/csv"
         )
+
+# Report back to the unified state
+    telemetry_link.update_global_state("atmospheric_models", "rossby_wave_index", result)

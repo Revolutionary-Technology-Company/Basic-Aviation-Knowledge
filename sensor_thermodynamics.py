@@ -1,12 +1,10 @@
-from numba import njit
-
-@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
-    
 # sensor_thermodynamics.py
 # Calculates the evaporative cooling penalty and thermal lag for official temperature sensors
 
 # --- PRIMARY ENGINE: [Model Name] ---
 import numpy as np
+from numba import njit
+@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
 import pandas as pd
 import matplotlib.pyplot as plt
 

@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def run_rossby_layer():
+def run_rossby_layer(telemetry_override=None):
     st.header("🌊 Rossby Wave Phase Speed & Jet Stream Configuration Engine")
     st.markdown(r"### Mathematical Core Planetary Dynamics Engine:")
     st.markdown(r"$$c = U_{\text{zonal}} - \frac{\beta_{\text{planetary}}}{k_x^2 + k_y^2}$$")

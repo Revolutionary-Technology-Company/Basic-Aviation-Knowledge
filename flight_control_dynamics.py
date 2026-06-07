@@ -45,3 +45,32 @@ class FlightControlDynamics:
     def set_mode(self, dynamic_on=True, mode="CIVILIAN"):
         self.dynamic = dynamic_on
         self.bank_limit = 30.0 if mode == "CIVILIAN" else 60.0
+        
+# Add this method to your FlightControlDynamics class in flight_control_dynamics.py
+
+    def calculate_turn_deceleration(self, weight_lbs, thrust_lbs, velocity_kts, bank_angle_deg):
+        """
+        Calculates the deceleration (speed bleed) in a banked turn.
+        Returns: Speed bleed in Knots Per Second. 
+        A negative value indicates the aircraft is slowing down.
+        """
+        g = 32.2  # ft/s^2
+        # Simplified Induced Drag calculation for trim compensation
+        # D_induced increases with the square of the Load Factor (n)
+        # where n = 1 / cos(bank_angle)
+        load_factor = 1.0 / np.cos(np.radians(bank_angle_deg))
+        
+        # Estimate Drag based on aerodynamic configuration
+        # For trim correction, we focus on the delta (change) in drag
+        # induced by the turn
+        d_parasite = 0.05 * (velocity_kts ** 2) # simplified parasite drag
+        d_induced = 0.02 * (velocity_kts ** 2) * (load_factor ** 2) # induced drag spike
+        
+        # Acceleration formula: dv/dt = (g / W) * (T - D)
+        # We convert weight to lbs force units
+        dv_dt_fps2 = (g / weight_lbs) * (thrust_lbs - (d_parasite + d_induced))
+        
+        # Convert to Knots Per Second
+        dv_dt_kts_per_sec = dv_dt_fps2 / 1.68781
+        
+        return dv_dt_kts_per_sec

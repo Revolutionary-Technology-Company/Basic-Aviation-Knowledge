@@ -57,6 +57,7 @@ model_choice = st.sidebar.radio(
         "Planetary Cloud Corridor Engine",
         "12-Month Future Calendar Arc",
         "Cloud Radiative Flux Balance"
+        "Structural Aircraft Icing Hazard Matrix"
     ]
 )
 
@@ -99,3 +100,7 @@ elif model_choice == "12-Month Future Calendar Arc":
 elif model_choice == "Cloud Radiative Flux Balance":
     import radiation_model
     radiation_model.run_radiation_layer()
+
+elif model_choice == "Structural Aircraft Icing Hazard Matrix":
+    import icing_model
+    icing_model.run_icing_layer()

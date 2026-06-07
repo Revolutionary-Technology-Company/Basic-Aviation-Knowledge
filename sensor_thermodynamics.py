@@ -3,6 +3,7 @@
 
 # --- PRIMARY ENGINE: [Model Name] ---
 import numpy as np
+import multiprocessing as mp
 from numba import njit
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
 import streamlit as st

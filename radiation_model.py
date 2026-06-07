@@ -1,113 +1,119 @@
-# --- PRIMARY ENGINE: [Model Name] ---
-import streamlit as st
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+# --- PRIMARY ENGINE: Cloud Radiative Flux Balance ---
+import math
+from numba import njit
 
 # --- SECONDARY ENGINE DEPENDENCIES ---
+import telemetry_link          # NEW: Integrated Centralized Data Bus
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow
-import aircraft_perf           # Performance calculations
-import sensor_thermodynamics   # Env data scaling
-import aerodynamic_matrix      # Lift/Drag logic
-
-from numba import njit
-@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
 
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
-    print("🚀 NVIDIA GPU Acceleration Engaged")
+    print("🚀 NVIDIA GPU Acceleration Engaged (Radiation Matrix)")
 except ImportError:
     import numpy as np # Fallback to standard CPU math
     print("⚡ Using CPU (NVIDIA acceleration not detected)")
 
-from numba import njit
+@njit(fastmath=True)
+def calculate_radiative_flux(cloud_fraction, surface_albedo, temp_surface_k, temp_cloud_base_k, solar_zenith_deg):
+    """
+    Computes the Shortwave (Solar) and Longwave (Infrared) energy balance.
+    Compiled via Numba for high-performance floating point operations.
+    """
+    # 1. Physical Constants
+    sigma = 5.670374e-8    # Stefan-Boltzmann constant (W/m^2*K^4)
+    solar_constant = 1361.0 # W/m^2 at top of atmosphere
+    
+    # 2. Shortwave (Solar) Flux Calculation
+    # Convert zenith angle to radians and calculate solar incidence
+    zenith_rad = solar_zenith_deg * (math.pi / 180.0)
+    cos_zenith = max(0.0, math.cos(zenith_rad))
+    
+    # Dynamic Albedo factoring in cloud cover
+    cloud_albedo_factor = 0.55 * cloud_fraction
+    total_effective_albedo = surface_albedo + cloud_albedo_factor - (surface_albedo * cloud_albedo_factor)
+    
+    sw_down_surface = solar_constant * cos_zenith * (1.0 - cloud_albedo_factor)
+    sw_net = sw_down_surface * (1.0 - total_effective_albedo)
 
-@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
+    # 3. Longwave (Infrared) Flux Calculation
+    # Upwelling from the surface
+    lw_up = sigma * (temp_surface_k ** 4)
+    
+    # Downwelling from the atmosphere/clouds
+    # Clear sky emissivity ~0.76, dense cloud emissivity ~0.95
+    effective_emissivity = 0.76 + (0.95 - 0.76) * cloud_fraction
+    lw_down = effective_emissivity * sigma * (temp_cloud_base_k ** 4)
+    
+    lw_net = lw_down - lw_up
+
+    # 4. Total Net Radiative Flux Balance
+    # Positive = Surface is warming (absorbing energy)
+    # Negative = Surface is cooling (radiating energy away)
+    net_flux = sw_net + lw_net
+    
+    return sw_net, lw_net, net_flux
 
 def run_radiation_layer(telemetry_override=None):
-    st.header("☀️ Radiative Energy Balance & Sensor Heat Flux Model")
-    st.markdown(r"### Mathematical Core Energy Balance Engine:")
-    st.markdown(r"$$Q_{\text{net}} = (1 - \alpha_s) S^{\downarrow} \mathbf{T}_{\text{sw}}(\rho_c) + \left[ \epsilon_a \sigma T_{\text{atm}}^4 + \mathbf{R}_{\text{lw}}^{\downarrow}(\rho_c) \right] - \epsilon_s \sigma T_{\text{surface}}^4$$")
+    """
+    Main orchestration function. Extracts live telemetry, computes the radiative
+    flux balance, and reports findings directly to the Boeing JSON payload.
+    """
+    print("☀️ Running Cloud Radiative Flux Balance Layer...")
     
-    col1, col2 = st.columns(2)
+    # 1. Parse incoming live telemetry (with safe standard atmosphere fallbacks)
+    c_frac = 0.5            # 50% Cloud Cover
+    s_albedo = 0.2          # Standard land albedo
+    t_surf_c = 15.0         # Surface Temp
+    t_cloud_c = 5.0         # Cloud Base Temp
+    zenith = 45.0           # Mid-day solar angle
     
-    with col1:
-        st.markdown("### ☁️ Liquid Water Path (Cloud Density Vector)")
-        day_lwp = st.slider("Daytime Integrated Cloud Density ($LWP$ in $g/m^2$)", 0.0, 300.0, 120.0, step=5.0)
-        night_lwp = st.slider("Nighttime Integrated Cloud Density ($LWP$ in $g/m^2$)", 0.0, 300.0, 180.0, step=5.0)
-        
-        st.markdown("### 🌍 Surface Background Constraints")
-        s_down = st.number_input("Peak Unobstructed Solar Irradiance ($S^{\downarrow}$ in $W/m^2$)", value=800.0)
-        albedo = st.slider("Station Surface Albedo ($\alpha_s$ constant)", 0.05, 0.40, 0.18, step=0.01)
-        c_s = st.slider("Ground Soil Thermal Heat Capacity ($C_s$ in $J/m^2 \cdot K$)", 10000, 50000, 25000, step=1000)
+    if telemetry_override:
+        c_frac = telemetry_override.get('cloud_fraction', c_frac)
+        s_albedo = telemetry_override.get('surface_albedo', s_albedo)
+        t_surf_c = telemetry_override.get('temp_c', t_surf_c)
+        t_cloud_c = telemetry_override.get('cloud_base_temp_c', t_cloud_c)
+        zenith = telemetry_override.get('solar_zenith_deg', zenith)
 
-    with col2:
-        # Fixed physical constants
-        sigma = 5.670374e-8  # Stefan-Boltzmann constant
-        k_sw = 0.015         # Shortwave extinction factor
-        k_lw = 0.022         # Longwave absorption factor
-        t_surface_k = 298.15 # Surface temperature baseline (25 C in Kelvin)
-        t_atm_k = 288.15     # Upper air temperature baseline (15 C in Kelvin)
-        epsilon_a = 0.76     # Clear sky atmospheric emissivity
-        epsilon_s = 0.95     # Surface grass/dirt emissivity
-        
-        # 1. Evaluate Daytime Shortwave Filtration: T_sw = exp(-k_sw * LWP)
-        t_sw = np.exp(-k_sw * day_lwp)
-        solar_absorbed = (1.0 - albedo) * s_down * t_sw
-        
-        # 2. Evaluate Nighttime Longwave Trapping: R_lw = (1 - exp(-k_lw * LWP)) * sigma * T^4
-        clear_sky_downwelling = epsilon_a * sigma * (t_atm_k**4)
-        cloud_longwave_enhancement = (1.0 - np.exp(-k_lw * night_lwp)) * sigma * (t_surface_k**4) * 0.2
-        total_longwave_down = clear_sky_downwelling + cloud_longwave_enhancement
-        
-        # 3. Upwelling Longwave Outflux from Earth's Surface
-        upwelling_longwave = epsilon_s * sigma * (t_surface_k**4)
-        
-        # 4. Net Thermodynamic Heat Budget Flux Loops
-        q_net_day = solar_absorbed + total_longwave_down - upwelling_longwave
-        q_net_night = 0.0 + total_longwave_down - upwelling_longwave  # No solar at night
-        
-        # 5. Delta T Derivation Vector (Kelvin/Celsius scale shift per hour)
-        delta_t_day_hourly = (q_net_day / c_s) * 3600.0
-        delta_t_night_hourly = (q_net_night / c_s) * 3600.0
-        
-        # --- GRAPH GENERATION ENGINE ---
-        fig, ax = plt.subplots(figsize=(10, 4.5))
-        timesteps = ['Day High (Shortwave Dominated)', 'Night Low (Longwave Dominated)']
-        flux_values = [q_net_day, q_net_night]
-        colors = ['gold', 'midnightblue']
-        
-        bars = ax.bar(timesteps, flux_values, color=colors, edgecolor='black', width=0.4)
-        ax.axhline(0, color='black', linestyle='-', alpha=0.5)
-        ax.set_ylabel("Net Thermal Energy Flux Budget ($W/m^2$)")
-        ax.set_title("NWS Sensor Energy Flux Balance Under Active Cloud Constraints")
-        ax.grid(True, axis='y', alpha=0.2)
-        
-        # Overlay numerical flux labels on top of the rendered bars
-        for bar in bars:
-            yval = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2.0, yval + (15 if yval >= 0 else -35), 
-                    f"{yval:.1f} W/m²", ha='center', va='center', fontweight='bold')
-                    
-        st.pyplot(fig)
-        
-        # --- RENDER STRATEGIC HOURLY PERFORMANCE METRICS ---
-        st.markdown("### 📊 Calculated Thermal Rate Shifts at Weather Station")
-        m_col1, m_col2 = st.columns(2)
-        m_col1.metric("Daytime Suppressed Warming Rate", f"{delta_t_day_hourly:+.2f} °C / hr", help="Net heat addition to ground soil layer during daylight hours.")
-        m_col2.metric("Nighttime Trapped Cooling Rate", f"{delta_t_night_hourly:+.2f} °C / hr", help="Rate of temperature drop. Cloud blanket keeps this value close to zero.")
-        
-        # --- COMPILE DATA MATRIX STRUCTURAL LOG ---
-        df_flux = pd.DataFrame({
-            "Radiative_Flux_Component": ["Shortwave_Transmission_Fraction", "Absorbed_Solar_Daytime_W_m2", "Total_Downwelling_Longwave_W_m2", "Upwelling_Surface_Outflux_W_m2", "Net_Daytime_Energy_Flux_W_m2", "Net_Nighttime_Energy_Flux_W_m2"],
-            "Calculated_Value": [round(t_sw, 4), round(solar_absorbed, 2), round(total_longwave_down, 2), round(upwelling_longwave, 2), round(q_net_day, 2), round(q_net_night, 2)]
-        })
-        
-        # Integrated Spreadsheet Downloader Link
-        st.download_button(
-            label="💾 Export Cloud Radiative Flux Matrix (.csv)",
-            data=df_flux.to_csv(index=False).encode('utf-8'),
-            file_name="cloud_radiative_energy_flux_matrix.csv",
-            mime="text/csv"
-        )
+    # Convert Celsius to Kelvin for Stefan-Boltzmann math
+    t_surf_k = t_surf_c + 273.15
+    t_cloud_k = t_cloud_c + 273.15
+
+    # 2. Execute FastMath Physics Engine
+    sw_net, lw_net, total_net = calculate_radiative_flux(
+        cloud_fraction=c_frac,
+        surface_albedo=s_albedo,
+        temp_surface_k=t_surf_k,
+        temp_cloud_base_k=t_cloud_k,
+        solar_zenith_deg=zenith
+    )
+    
+    # 3. Format Data for the Flight Computer
+    payload = {
+        "shortwave_net_flux_w_m2": round(sw_net, 2),
+        "longwave_net_flux_w_m2": round(lw_net, 2),
+        "total_net_flux_w_m2": round(total_net, 2),
+        "cooling_regime_active": bool(total_net < 0.0), # True if radiating more heat than absorbing
+        "solar_zenith_deg": zenith,
+        "cloud_fraction": c_frac
+    }
+    
+    # 4. Push to Global Pipeline
+    telemetry_link.update_global_state("atmospheric_models", "radiation_flux", payload)
+    print(f"✅ Radiative Flux parameters reported to global state.")
+    
+    return payload
+
+if __name__ == "__main__":
+    print("=================================================================")
+    print("      AEROSPACE CLOUD RADIATIVE FLUX BALANCE ENGINE              ")
+    print("=================================================================")
+    
+    # Test Run
+    result = run_radiation_layer()
+    print("-" * 65)
+    print(f"📡 Net Shortwave (Solar) Absorption: {result['shortwave_net_flux_w_m2']} W/m²")
+    print(f"📡 Net Longwave (IR) Emission:       {result['longwave_net_flux_w_m2']} W/m²")
+    print(f"🌍 TOTAL NET ENERGY FLUX:            {result['total_net_flux_w_m2']} W/m²")
+    print(f"❄️ Surface Cooling Regime Active:   {result['cooling_regime_active']}")
+    print("=================================================================")

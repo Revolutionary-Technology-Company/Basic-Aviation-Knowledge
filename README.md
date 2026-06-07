@@ -8,7 +8,7 @@ By coupling macro-atmospheric fluid dynamics with the specific heat capacity of 
 🌟 Core Features
 ----------------
 
--   Official Climatological Record Prediction: Mathematically predicts the final daily reporting target by calculating the physical thermodynamics of local sensor enclosures, including evaporative cooling penalties, thermal mass lag, and solar albedo variants (Plastic vs. Wooden hardware profiles).
+-   Official Climatological Record Prediction: Mathematically predicts physical thermodynamics, including evaporative cooling penalties, thermal mass lag, and solar albedo variants.
 
 -   Live Flight Telemetry Mode: Seamlessly transitions from a static pre-flight planning calculator to an active in-flight navigational tool. Interfaces directly with USB DGPS/RTK and barometric elevation dongles via NMEA serial data to stream real-time coordinates and altitudes directly into the performance matrices.
 

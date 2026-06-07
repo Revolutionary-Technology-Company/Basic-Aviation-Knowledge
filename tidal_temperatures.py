@@ -42,6 +42,16 @@ def calculate_tidal_temperature_suppression(telemetry_override=None):
     print("            TIDAL FLUX RESULTS               ")
     print("=============================================")
     print(f"Initial Shore Distance:  {D_0:.1f} meters")
+
+from numba import njit
+
+@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
+def calculate_density_and_cooling(temp_c, wind_mph, relative_humidity=0.50):
+    # Your existing pure-math logic here
+    T_kelvin = temp_c + 273.15
+    # ... rest of your calculations
+    return air_density, wind_chill_c, cooling_delta
+    
     print(f"High Tide Water Advance: {water_displacement:.1f} meters closer")
     print(f"Active Sensor Distance:  {current_distance:.1f} meters away")
     print(f"Overridden Sensor Temp:  {T_sensor:.2f} °F")

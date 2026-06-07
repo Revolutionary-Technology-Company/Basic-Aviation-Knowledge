@@ -14,11 +14,6 @@ import matplotlib.pyplot as plt
 from numba import njit
 
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
-def calculate_density_and_cooling(temp_c, wind_mph, relative_humidity=0.50):
-    # Your existing pure-math logic here
-    T_kelvin = temp_c + 273.15
-    # ... rest of your calculations
-    return air_density, wind_chill_c, cooling_delta
 
 # --- SECONDARY ENGINE DEPENDENCIES ---
 import aviation_physics        # Core math

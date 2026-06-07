@@ -4,7 +4,7 @@
 import pandas as pd
 from shapely.geometry import Polygon, Point
 
-def build_radar_polygon(filepath, station_id):
+def build_radar_polygon(telemetry_override=None, filepath, station_id):
     """
     Reads the exported ExpertGPS text file and constructs a 2D boundary polygon.
     """

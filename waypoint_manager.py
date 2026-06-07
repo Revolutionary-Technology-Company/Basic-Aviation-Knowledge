@@ -1,13 +1,15 @@
 import json
 import os
 
+# waypoint_manager.py (Update the Waypoint class)
 class Waypoint:
-    def __init__(self, name, lat, lon, alt, target_heading):
+    def __init__(self, name, lat, lon, alt, target_heading, turn_radius=0.5):
         self.name = name
         self.lat = lat
         self.lon = lon
         self.alt = alt
         self.target_heading = target_heading
+        self.turn_radius = turn_radius # NM radius to start the smooth turn
 
     def to_dict(self):
         return self.__dict__

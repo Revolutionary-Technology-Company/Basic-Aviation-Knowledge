@@ -6,6 +6,10 @@ import numpy as np
 from numba import njit
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
 import pandas as pd
+# memory_manager.py
+from dynamic_memory_cache import DynamicMemoryCache
+# Create one shared cache instance for the whole app
+shared_cache = DynamicMemoryCache(percentage=0.25)
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point
 

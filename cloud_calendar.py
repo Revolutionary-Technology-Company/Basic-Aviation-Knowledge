@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def run_calendar_arc_layer():
+def run_calendar_arc_layer(telemetry_override=None):
     st.header("📅 12-Month Multi-Scenario Comparative Engine")
     st.markdown(r"Toggle independent IPCC Shared Socioeconomic Pathways (SSPs) on or off to visually compare cloud density paths ($\Delta LWP$) on a single layout.")
     

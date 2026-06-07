@@ -4,6 +4,19 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# --- PRIMARY ENGINE: [Model Name] ---
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
+
 def run_sea_layer(telemetry_override=None):
     st.header("🌲 Seattle (SEA / KATX Area) Convergence & Orographic Model")
     st.markdown(r"### Equation: $T_{\text{SEA}}(d) = T_{\text{rural}} + \Delta T_{\text{olympic}} \cdot \Theta(v) - \Delta T_{\text{pscz}} \cdot \Theta(\text{Wind}) + \Delta T_{\text{station}}$")

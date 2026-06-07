@@ -6,9 +6,7 @@ import numpy as np
 import pandas as pd
 import requests
 from numba import njit
-
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
-    
 from io import StringIO
 from datetime import datetime
 import matplotlib.pyplot as plt

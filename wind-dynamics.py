@@ -1,6 +1,6 @@
 import numpy as np
 
-def calculate_density_and_cooling(temp_c, wind_mph, relative_humidity=0.50):
+def calculate_density_and_cooling(telemetry_override=None, temp_c, wind_mph, relative_humidity=0.50):
     """
     Solves the combined gas density and convective wind cooling equations
     for atmospheric weather analysis.

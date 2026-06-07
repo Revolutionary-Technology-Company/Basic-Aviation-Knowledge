@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # --- SECONDARY ENGINE DEPENDENCIES ---
+import telemetry_link  # NEW: Integrated Centralized Data Bus
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow
 import aircraft_perf           # Performance calculations
@@ -86,5 +87,9 @@ def get_live_icing_pirep_data(live_telemetry, env_data):
     
     # Return formatted PIREP string segment
     pirep_code = f"{intensity} {icing_type}" if intensity != "NONE" else "NONE"
+    
+    # --- NEW: Telemetry Update Integration ---
+    telemetry_link.update_global_state("atmospheric_models", "icing_pirep", pirep_code)
+    telemetry_link.update_global_state("atmospheric_models", "icing_mass_kg_hr", mass)
     
     return pirep_code, mass

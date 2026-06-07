@@ -1,12 +1,13 @@
 # --- PRIMARY ENGINE: Aviation Icing ---
 import multiprocessing as mp
 import telemetry_link  # Integrated Centralized Data Bus
+import numpy as np # Fallback to standard CPU math
+import pandas as pd
 
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
     print("🚀 NVIDIA GPU Acceleration Engaged")
 except ImportError:
-    import numpy as np # Fallback to standard CPU math
     print("⚡ Engaging CPU")
 
 def calculate_icing_accretion(temp_c, rh_pct, rainfall_mm_hr, elevation_m, wind_mph=30.0):

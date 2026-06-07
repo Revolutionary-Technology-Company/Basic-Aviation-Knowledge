@@ -1,7 +1,3 @@
-from numba import njit
-
-@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
-    
 # radar_geometry_parser.py
 # Ingests volumetric radar trackpoints to map beam heights over NWS sensors
 
@@ -9,6 +5,8 @@ from numba import njit
 import io
 import streamlit as st
 import numpy as np
+from numba import njit
+@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
 import pandas as pd
 import matplotlib.pyplot as plt
 

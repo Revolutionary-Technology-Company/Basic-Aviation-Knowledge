@@ -2,11 +2,13 @@
 import sys
 import importlib
 from waypoint_manager import WaypointManager
-# Initialize the manager globally
+from flight_control_dynamics import FlightControlDynamics
+
+# Initialize the engines globally so they are ready for any model
 wp_manager = WaypointManager()
+computer = FlightControlDynamics(mode="CIVILIAN")
 
 # List of all primary engine modules to verify and load
-
 MODULES = [
     "AITA_spikes", "aita_model", "sfo_model", "sea_model", 
     "phx_model", "ord_model", "rossby_model", "lunar_model", 
@@ -33,9 +35,11 @@ def run_flight_controller():
     
     print("\n✈️ Basic Aviation Knowledge - iOS Flight Controller")
     print("--------------------------------------------------")
-    print("Select an Engine to Run:")
+    print(f"📍 Active Waypoint: {wp_manager.get_active_waypoint(index=0).name if wp_manager.get_active_waypoint(index=0) else 'None'}")
+    print(f"⚙️ Dynamics Mode: {computer.mode}")
+    print("\nSelect an Engine to Run:")
     
-    # Create a simple menu based on successfully loaded modules
+    # Create a menu based on successfully loaded modules
     available = list(loaded_engines.keys())
     for i, name in enumerate(available, 1):
         print(f"{i}. {name}")
@@ -55,6 +59,7 @@ def run_flight_controller():
         
         if func_name:
             print(f"\n🚀 Engaging {func_name} in {selected_mod_name}...")
+            # Execute the engine with the current global computer instance context
             getattr(engine, func_name)(telemetry_override=None)
         else:
             print(f"Error: Could not find a 'run_' function in {selected_mod_name}")

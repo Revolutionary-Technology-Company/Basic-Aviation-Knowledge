@@ -1,5 +1,15 @@
+# --- PRIMARY ENGINE: [Model Name] ---
+import streamlit as st
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
 
 def simulate_nocturnal_cooling(telemetry_override=None, lwp_g_m2, initial_temp_c=25.0, hours=12.0):
     """Simulates 12 hours of nighttime radiative cooling by solving the

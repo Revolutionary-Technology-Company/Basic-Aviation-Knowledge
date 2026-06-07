@@ -2,7 +2,7 @@ import csv
 import numpy as np
 
 
-def run_and_save_lunar_phase():
+def run_and_save_lunar_phase(telemetry_override=None):
     print("--- Lunar Phase Signal Spreadsheet Engine ---")
     start_index_day = float(
         input("Enter start index day of lunar calendar (0 = New Moon): ")

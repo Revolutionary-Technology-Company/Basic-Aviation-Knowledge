@@ -1,5 +1,4 @@
 # --- PRIMARY ENGINE: [Model Name] ---
-import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,6 +16,8 @@ try:
 except ImportError:
     import numpy as np # Fallback to standard CPU math
     print("⚡ Using CPU (NVIDIA acceleration not detected)")
+    
+import streamlit as st
 
 def run_atl_layer(telemetry_override=None):
     st.header("🍑 Atlanta Spikes (ATL / KFFC Area) Local Temperature Tendency")

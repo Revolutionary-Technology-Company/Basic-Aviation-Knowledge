@@ -1,9 +1,10 @@
-# --- PRIMARY ENGINE: [Model Name] ---
+# --- PRIMARY ENGINE: Cloud Radiative Cooling ---
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # --- SECONDARY ENGINE DEPENDENCIES ---
+import telemetry_link          # NEW: Integrated Centralized Data Bus
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow
 import aircraft_perf           # Performance calculations
@@ -11,9 +12,8 @@ import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 import streamlit as st
 
-def simulate_nocturnal_cooling(telemetry_override=None, lwp_g_m2, initial_temp_c=25.0, hours=12.0):
+def simulate_nocturnal_cooling(lwp_g_m2, initial_temp_c=25.0, hours=12.0):
     """Simulates 12 hours of nighttime radiative cooling by solving the
-
     Stefan-Boltzmann surface boundary layer energy equations.
     """
     # 1. Standard Physical Constants & Boundary Parameters
@@ -63,34 +63,47 @@ def simulate_nocturnal_cooling(telemetry_override=None, lwp_g_m2, initial_temp_c
     return final_temp_c, total_drop_c, total_longwave_down
 
 
-if __name__ == "__main__":
-    print("=================================================================")
-    print("      NWS SENSOR STEFAN-BOLTZMANN BOUNDARY SIMULATOR             ")
-    print("=================================================================")
-    print("Simulating a 12-Hour Night starting at 25.0°C (77.0°F)...")
-    print("Evaluating the exact degree drop across varying cloud states:\n")
+def run_cloud_temp_layer(telemetry_override=None):
+    """
+    Main orchestration function. Extracts live telemetry, runs the high-performance
+    physics simulation, and reports the findings directly to the Boeing JSON payload.
+    """
+    print("🌡️ Running Cloud Temperature Drop Matrix...")
+    
+    # 1. Default Parameters
+    t_start = 25.0
+    lwp = 100.0
+    
+    # 2. Parse incoming live telemetry
+    if telemetry_override:
+        t_start = telemetry_override.get('temp_c', t_start)
+        lwp = telemetry_override.get('lwp', lwp)
 
-    # Define variable cloud profiles to compare (Liquid Water Path in g/m²)
-    cloud_test_scenarios = {
-        "0.0 (Pristine Clear Sky)": 0.0,
-        "25.0 (Thin Translucent Cirrus)": 25.0,
-        "100.0 (Moderate Altostratus Deck)": 100.0,
-        "250.0 (Dense Low Stratus Blanket)": 250.0,
+    # 3. Execute Physics Engine
+    final_t, drop_c, lw_flux = simulate_nocturnal_cooling(
+        lwp_g_m2=float(lwp),
+        initial_temp_c=float(t_start)
+    )
+    
+    # 4. Format Data for the Flight Computer
+    payload = {
+        "initial_temp_c": round(float(t_start), 2),
+        "liquid_water_path_g_m2": round(float(lwp), 2),
+        "final_predicted_temp_c": round(float(final_t), 2),
+        "total_temperature_drop_c": round(float(drop_c), 2),
+        "downwelling_longwave_flux_w_m2": round(float(lw_flux), 2)
     }
+    
+    # 5. Push to Global Pipeline
+    telemetry_link.update_global_state("atmospheric_models", "cloud_temperature_drop", payload)
+    print("✅ Cloud temperature calculations reported to global state.")
+    
+    return payload
 
-    # Execute simulation grid loops
-    for label, lwp in cloud_test_scenarios.items():
-        final_t, degree_drop, lw_flux = simulate_nocturnal_cooling(
-            lwp_g_m2=lwp
-        )
 
-        # Convert metrics to Fahrenheit for standard NWS verification scales
-        initial_f = 77.0
-        final_f = (final_t * 9.0 / 5.0) + 32.0
-        drop_f = initial_f - final_f
-
-        print(f"☁️  Cloud Liquid Water Path Profile: {label}")
-        print(f"   -> Downwelling Longwave Counter-Flux: {lw_flux:.2f} W/m²")
-        print(f"   -> Final Morning Sensor Reading:     {final_t:.2f}°C ({final_f:.1f}°F)")
-        print(f"   -> EXACT RADIATIVE TEMPERATURE DROP:  {degree_drop:.2f}°C ({drop_f:.1f}°F)")
-        print("-" * 65)
+if __name__ == "__main__":
+    # Test suite
+    results = run_cloud_temp_layer()
+    print("\n--- TEST RESULTS ---")
+    print(f"Predicted Morning Temperature: {results['final_predicted_temp_c']}°C")
+    print(f"Total Radiative Drop:          {results['total_temperature_drop_c']}°C")

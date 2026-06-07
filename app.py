@@ -1,6 +1,9 @@
-import streamlit as st
 import live_telemetry
+from waypoint_manager import WaypointManager
+# Initialize the manager globally
+wp_manager = WaypointManager()
 import ai_pirep
+import streamlit as st
 
 # Inside your main application loop
 def guidance_loop(aircraft_state, waypoint):

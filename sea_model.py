@@ -4,12 +4,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# --- PRIMARY ENGINE: [Model Name] ---
-import streamlit as st
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
 # --- SECONDARY ENGINE DEPENDENCIES ---
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow

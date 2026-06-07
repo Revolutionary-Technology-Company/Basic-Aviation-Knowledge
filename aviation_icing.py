@@ -13,6 +13,13 @@ import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 
+try:
+    import cupy as np  # Attempt to use GPU-accelerated array math
+    print("🚀 NVIDIA GPU Acceleration Engaged")
+except ImportError:
+    import numpy as np # Fallback to standard CPU math
+    print("⚡ Engaging CPU")
+
 def calculate_icing_accretion(telemetry_override=None, temp_c, rh_pct, rainfall_mm_hr, elevation_m, wind_mph=30.0):
     """Solves the coupled mass collection and thermodynamic freezing equations."""
     # 1. Core Physical Constants

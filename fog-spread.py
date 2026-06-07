@@ -1,6 +1,6 @@
 import numpy as np
 
-def simulate_and_log_fog_lifecycle(initial_temp=25.0, initial_dew=17.0, base_wind=5.0, gust_scale=0.08):
+def simulate_and_log_fog_lifecycle(telemetry_override=None, initial_temp=25.0, initial_dew=17.0, base_wind=5.0, gust_scale=0.08):
     """
     Runs a 12-hour simulation (720 minutes) and prints a real-time mathematical logging table
     tracking the exact minute fog forms, scatters, or reforms under wind shear.

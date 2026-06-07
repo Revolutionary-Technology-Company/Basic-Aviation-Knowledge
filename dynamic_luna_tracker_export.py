@@ -16,9 +16,6 @@ import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 
-
-
-
 def get_user_inputs(telemetry_override=None):
     print("--- GPS Station Lunar Log Configurator ---")
     lat = float(input("Enter Latitude in decimal degrees (e.g., 47.6062): "))

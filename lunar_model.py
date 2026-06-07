@@ -6,7 +6,7 @@ import astropy.coordinates as coord
 import astropy.units as u
 from astropy.time import Time
 
-def run_lunar_layer():
+def run_lunar_layer(telemetry_override=None):
     st.header("🌙 Celestial Tracking Matrix - Topocentric Lunar Path Generator")
     st.markdown(r"Calculates the topocentric tracking path vectors ($\vec{R}_{\text{topo}}$) relative to custom digital GPS receiver antennas.")
     

@@ -96,3 +96,35 @@ class FlightControlDynamics:
         dv_dt_kts_per_sec = dv_dt_fps2 / 1.68781
         
         return dv_dt_kts_per_sec
+# Add this to your FlightControlDynamics class
+def get_turn_exit_metrics(self, current_v_kts, bank_deg, roc_fpm, thrust_lbs, weight_lbs=2400):
+    """
+    Calculates exit acceleration and stall safety margin.
+    """
+    # 1. Compute Load Factor (n)
+    rad_bank = np.radians(bank_deg)
+    n = 1.0 / np.cos(rad_bank)
+    
+    # 2. Dynamic Stall Speed (Stall Speed Penalty Multiplier)
+    # V_stall_turn = V_stall_level * sqrt(n)
+    v_stall_turn = 50.0 * np.sqrt(n) # Assuming 50kts level stall speed
+    stall_margin = current_v_kts - v_stall_turn
+    
+    # 3. Acceleration out of turn (Total Energy Model)
+    # Incorporating induced drag increase and gravity vector (Gamma)
+    gamma = np.arcsin(roc_fpm / (current_v_kts * 1.688)) # Convert FPM to FPS
+    g = 32.2
+    
+    # Drag estimation (simplified profile)
+    d_induced = 0.02 * (current_v_kts**2) * (n**2)
+    d_parasite = 0.05 * (current_v_kts**2)
+    
+    # Acceleration formula: dv/dt = (g/W)*(T - D) - g*sin(gamma)
+    accel_fps2 = (g / weight_lbs) * (thrust_lbs - (d_parasite + d_induced)) - (g * np.sin(gamma))
+    accel_kts_per_sec = accel_fps2 / 1.6878
+    
+    return {
+        "acceleration_kts_per_sec": round(accel_kts_per_sec, 2),
+        "stall_margin_kts": round(stall_margin, 1),
+        "is_safe": stall_margin > 10.0 # Warning flag if margin < 10 knots
+    }

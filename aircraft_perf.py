@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def calculate_exact_roll(temp_c, pressure_inhg, headwind_mph, weight_lbs):
+def calculate_exact_roll(telemetry_override=None, temp_c, pressure_inhg, headwind_mph, weight_lbs):
     """Core physics subroutine calculating required ground roll distance for a given weight."""
     sigma = 5.670374e-8
     g = 32.174

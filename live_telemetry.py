@@ -6,6 +6,19 @@ import pynmea2
 import time
 import os
 
+# --- PRIMARY ENGINE: [Model Name] ---
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
+
 def get_live_position(telemetry_override=None, com_port="/dev/ttyUSB0", baudrate=9600):
     """
     Optimized for Pydroid/Android. Uses an aggressive timeout and 

@@ -3,7 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
-
+# memory_manager.py
+from dynamic_memory_cache import DynamicMemoryCache
+# Create one shared cache instance for the whole app
+shared_cache = DynamicMemoryCache(percentage=0.25)
 # --- SECONDARY ENGINE DEPENDENCIES ---
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow

@@ -1,24 +1,33 @@
 # cli_main.py
 import sys
 import importlib
+import telemetry_link
 from waypoint_manager import WaypointManager
 from flight_control_dynamics import FlightControlDynamics
 
+# --- 1. GLOBAL INITIALIZATION ---
 # Initialize the engines globally so they are ready for any model
 wp_manager = WaypointManager()
 computer = FlightControlDynamics(mode="CIVILIAN")
 
 # List of all primary engine modules to verify and load
 MODULES = [
-    "AITA_spikes", "aita_model", "sfo_model", "sea_model", 
-    "phx_model", "ord_model", "rossby_model", "lunar_model", 
-    "fog_thermodynamics", "radiation_model", "wind_dynamics", 
-    "space_weather_engine", "cloud_model", "cloud_calendar", 
-    "cloud_temperature_drop", "aviation_icing"
+    "wind_dynamics", 
+    "fog_thermodynamics", 
+    "radiation_model", 
+    "cloud_model", 
+    "space_weather_engine", 
+    "lunar_model", 
+    "aviation_icing",
+    "rossby_model",
+    "cloud_temperature_drop",
+    "cloud_calendar",
+    "aita_model",
+    "sfo_model"
 ]
 
 def verify_modules():
-    print("✈️ --- Verifying Module Integrity ---")
+    print("\n✈️ --- Verifying Module Integrity ---")
     loaded_modules = {}
     for mod_name in MODULES:
         try:
@@ -30,42 +39,78 @@ def verify_modules():
     return loaded_modules
 
 def run_flight_controller():
-    # 1. Run the health check
+    # 1. Run the health check and load engines
     loaded_engines = verify_modules()
     
-    print("\n✈️ Basic Aviation Knowledge - iOS Flight Controller")
-    print("--------------------------------------------------")
-    print(f"📍 Active Waypoint: {wp_manager.get_active_waypoint(index=0).name if wp_manager.get_active_waypoint(index=0) else 'None'}")
-    print(f"⚙️ Dynamics Mode: {computer.mode}")
-    print("\nSelect an Engine to Run:")
-    
-    # Create a menu based on successfully loaded modules
-    available = list(loaded_engines.keys())
-    for i, name in enumerate(available, 1):
-        print(f"{i}. {name}")
-    
-    choice = input("\nEnter engine number (or 'q' to quit): ")
-    
-    if choice.lower() == 'q':
-        return
+    while True:
+        print("\n==================================================")
+        print("✈️ Basic Aviation Knowledge - iOS Flight Controller")
+        print("==================================================")
+        
+        # Display current navigation/safety state
+        active_wp = wp_manager.get_active_waypoint(index=0)
+        wp_name = active_wp.name if active_wp else 'None'
+        print(f"📍 Active Waypoint: {wp_name}")
+        print(f"⚙️ Dynamics Mode:   {computer.mode}")
+        
+        if active_wp:
+            safety = computer.analyze_maneuver_safety(current_airspeed=110, target_bank_deg=30)
+            margin_status = "⚠️ UNSAFE" if safety['is_unsafe'] else "✅ SAFE"
+            print(f"🛡️ Stall Margin:    {safety['margin']} kts ({margin_status})")
 
-    try:
-        idx = int(choice) - 1
-        selected_mod_name = available[idx]
-        engine = loaded_engines[selected_mod_name]
+        print("\n--- Available Execution Engines ---")
         
-        # We try to find the run function dynamically
-        func_name = next((attr for attr in dir(engine) if attr.startswith("run_")), None)
-        
-        if func_name:
-            print(f"\n🚀 Engaging {func_name} in {selected_mod_name}...")
-            # Execute the engine with the current global computer instance context
-            getattr(engine, func_name)(telemetry_override=None)
-        else:
-            print(f"Error: Could not find a 'run_' function in {selected_mod_name}")
+        # Create a dynamic menu based on successfully loaded modules
+        available = list(loaded_engines.keys())
+        for i, name in enumerate(available, 1):
+            print(f"{i}. Run {name}")
             
-    except (ValueError, IndexError):
-        print("Invalid selection.")
+        print("\n--- System Commands ---")
+        print("E. Export Boeing Final Model JSON")
+        print("Q. Quit Application")
+        
+        choice = input("\nEnter selection: ").strip().upper()
+        
+        if choice == 'Q':
+            print("Shutting down flight controller. Fly safe.")
+            sys.exit(0)
+            
+        elif choice == 'E':
+            # Export the aggregated data bus directly to JSON
+            print("\n📦 Generating Master Payload...")
+            telemetry_link.export_final_model("final_model_output.json")
+            
+        else:
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(available):
+                    selected_mod_name = available[idx]
+                    engine = loaded_engines[selected_mod_name]
+                    
+                    # We try to find the run function dynamically
+                    func_name = next((attr for attr in dir(engine) if attr.startswith("run_")), None)
+                    
+                    if func_name:
+                        print(f"\n🚀 Engaging {func_name} in {selected_mod_name}...\n")
+                        
+                        # Provide override context for UI-independent models
+                        override_data = {
+                            "lat": 47.6062, "lon": -122.3321, "elevation_m": 45.0, "year": 2026,
+                            "temp_c": 15.0, "rh_pct": 0.85, "wind_mph": 15.0
+                        }
+                        
+                        # Execute the engine
+                        getattr(engine, func_name)(telemetry_override=override_data)
+                    else:
+                        print(f"⚠️ Error: Could not find a 'run_' orchestration function in {selected_mod_name}")
+                else:
+                    print("⚠️ Invalid numerical selection.")
+            except ValueError:
+                print("⚠️ Invalid input. Please select a number, 'E', or 'Q'.")
 
 if __name__ == "__main__":
-    run_flight_controller()
+    try:
+        run_flight_controller()
+    except KeyboardInterrupt:
+        print("\n\nProcess interrupted by pilot. Exiting.")
+        sys.exit(0)

@@ -1,7 +1,7 @@
 # sensor_thermodynamics.py
 # Calculates the evaporative cooling penalty and thermal lag for official temperature sensors
 
-def calculate_wet_sensor_penalty(t_ambient_c, humidity, wind_speed_mps, is_wooden_sensor=False, is_raining=True):
+def calculate_wet_sensor_penalty(telemetry_override=None, t_ambient_c, humidity, wind_speed_mps, is_wooden_sensor=False, is_raining=True):
     """
     Adjusts the predicted official maximum temperature downward due to 
     evaporative cooling on the physical thermometer enclosure.

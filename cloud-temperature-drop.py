@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def simulate_nocturnal_cooling(lwp_g_m2, initial_temp_c=25.0, hours=12.0):
+def simulate_nocturnal_cooling(telemetry_override=None, lwp_g_m2, initial_temp_c=25.0, hours=12.0):
     """Simulates 12 hours of nighttime radiative cooling by solving the
 
     Stefan-Boltzmann surface boundary layer energy equations.

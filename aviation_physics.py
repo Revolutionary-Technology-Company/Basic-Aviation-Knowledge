@@ -1,6 +1,13 @@
 import streamlit as st
 import math
 
+try:
+    import cupy as np  # Attempt to use GPU-accelerated array math
+    print("🚀 NVIDIA GPU Acceleration Engaged")
+except ImportError:
+    import numpy as np # Fallback to standard CPU math
+    print("⚡ Using CPU (NVIDIA acceleration not detected)")
+
 def calculate_ground_effect_ratio(telemetry_override=None, height, wingspan):
     if wingspan <= 0: return 1.0
     h_b_ratio = height / wingspan

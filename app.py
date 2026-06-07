@@ -40,7 +40,12 @@ with st.sidebar:
     if st.button("Register Waypoint"):
         wp_manager.register_waypoint(wp_name, lat, lon, alt, heading)
         st.success(f"Registered {wp_name}")
-
+        
+    st.markdown("---")
+    st.subheader("Flight Mode")
+    mode = st.radio("Maneuver Profile", ["CIVILIAN", "SPORT"])
+    computer.set_mode(mode=mode)
+    
 # --- DYNAMICS MONITOR ---
 st.subheader("Live Trim Correction")
 active_wp = wp_manager.get_active_waypoint(index=0)
@@ -68,6 +73,28 @@ st.title("✈️ Basic Aviation Knowledge - Master Control")
 live_data = None 
 # ... 
 
+# --- 3. Main Dashboard: Performance Advisory ---
+st.subheader("Performance Envelope Advisory")
+active_wp = wp_manager.get_active_waypoint(index=0)
+
+if active_wp:
+    # Get Safety Advisory
+    # Using hardcoded current airspeed (110kts) and bank (turn_radius * 10) for demo
+    safety = computer.analyze_maneuver_safety(current_airspeed=110, target_bank_deg=30)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Target Heading", active_wp.target_heading)
+        st.metric("Stall Margin", f"{safety['margin']} kts")
+    
+    with col2:
+        if safety['is_unsafe']:
+            st.error("⚠️ ADVISORY: Maneuver breaches safety envelope.")
+        else:
+            st.success("✅ Maneuver within safe performance envelope.")
+else:
+    st.info("No waypoints registered. Use sidebar to add a navigation point.")
+    
 # --- MODEL SELECTION ---
 # This list now includes every identified potential "runnable" module
 model_choice = st.sidebar.selectbox("Choose Atmospheric Model Layer:", [

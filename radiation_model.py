@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def run_radiation_layer():
+def run_radiation_layer(telemetry_override=None):
     st.header("☀️ Radiative Energy Balance & Sensor Heat Flux Model")
     st.markdown(r"### Mathematical Core Energy Balance Engine:")
     st.markdown(r"$$Q_{\text{net}} = (1 - \alpha_s) S^{\downarrow} \mathbf{T}_{\text{sw}}(\rho_c) + \left[ \epsilon_a \sigma T_{\text{atm}}^4 + \mathbf{R}_{\text{lw}}^{\downarrow}(\rho_c) \right] - \epsilon_s \sigma T_{\text{surface}}^4$$")

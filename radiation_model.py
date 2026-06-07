@@ -11,6 +11,9 @@ import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 
+from numba import njit
+@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
+
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
     print("🚀 NVIDIA GPU Acceleration Engaged")

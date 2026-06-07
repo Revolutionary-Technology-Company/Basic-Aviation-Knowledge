@@ -1,6 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# --- PRIMARY ENGINE: [Model Name] ---
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
+
 def simulate_sf_climate(telemetry_override=None):
     print("--- San Francisco Climate Superposition Model ---")
     start_year = int(input("Enter starting year (e.g., 1850): "))

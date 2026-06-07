@@ -1,11 +1,10 @@
-# --- PRIMARY ENGINE: [Model Name] ---
-import numpy as np
-from numba import njit
-@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
+# --- PRIMARY ENGINE: Fog Thermodynamics ---
 import pandas as pd
 import matplotlib.pyplot as plt
+from numba import njit
 
 # --- SECONDARY ENGINE DEPENDENCIES ---
+import telemetry_link          # NEW: Integrated Centralized Data Bus
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow
 import aircraft_perf           # Performance calculations
@@ -20,11 +19,12 @@ except ImportError:
     import numpy as np # Fallback to standard CPU math
     print("⚡ Using CPU (NVIDIA acceleration not detected)")
 
+
+@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
 def simulate_cooling_with_dynamic_fog(
-    telemetry_override=None, lwp_initial, initial_temp_c=25.0, initial_dewpoint_c=12.0, hours=12.0
+    telemetry_override=None, lwp_initial=0.0, initial_temp_c=25.0, initial_dewpoint_c=12.0, hours=12.0
 ):
     """Simulates 12 hours of nighttime cooling, dynamically tracking moisture
-
     saturation to model fog formation and dew point capping loops.
     """
     # 1. Physical & Thermodynamic Constants
@@ -97,6 +97,49 @@ def simulate_cooling_with_dynamic_fog(
     return T_surf, total_drop_c, lwp_active, fog_formed_at_step
 
 
+def run_fog_layer(telemetry_override=None):
+    """
+    Main orchestration function. Extracts live telemetry, runs the high-performance
+    physics simulation, and reports the findings directly to the Boeing JSON payload.
+    """
+    print("☁️ Running Fog Thermodynamics Layer...")
+    
+    # 1. Parse incoming live telemetry (with safe fallbacks)
+    temp = 25.0
+    dew = 12.0
+    lwp = 0.0
+    
+    if telemetry_override:
+        temp = telemetry_override.get('temp_c', temp)
+        dew = telemetry_override.get('dewpoint_c', dew)
+        lwp = telemetry_override.get('lwp', lwp)
+
+    # 2. Execute GPU/FastMath Physics Engine
+    final_t, drop_c, final_lwp, fog_hour = simulate_cooling_with_dynamic_fog(
+        telemetry_override=None,
+        lwp_initial=lwp,
+        initial_temp_c=temp,
+        initial_dewpoint_c=dew
+    )
+    
+    # 3. Format Data for the Flight Computer
+    payload = {
+        "initial_temp_c": temp,
+        "initial_dew_c": dew,
+        "final_temp_c": round(final_t, 2),
+        "temperature_drop_c": round(drop_c, 2),
+        "final_liquid_water_path_g_m2": round(final_lwp, 2),
+        "fog_formation_hour": round(fog_hour, 2) if fog_hour is not None else None,
+        "fog_risk_active": bool(fog_hour is not None)
+    }
+    
+    # 4. Push to Global Pipeline
+    telemetry_link.update_global_state("atmospheric_models", "fog_thermodynamics", payload)
+    print(f"✅ Fog layer calculations reported to global state.")
+    
+    return payload
+
+
 if __name__ == "__main__":
     print("=================================================================")
     print("      NWS BOUNDARY LAYER SATURATION & FOG ENGINE                 ")
@@ -106,35 +149,4 @@ if __name__ == "__main__":
 
     # Evaluate different atmospheric humidity profiles
     humidity_scenarios = {
-        "Dry Air Matrix (Low Dew Point)": {"temp": 25.0, "dew": 2.0, "lwp": 0.0},
-        "Humid Air Matrix (High Dew Point)": {
-            "temp": 25.0,
-            "dew": 16.0,
-            "lwp": 0.0,
-        },
-        "Pre-Existing Overcast Fog Matrix": {
-            "temp": 18.0,
-            "dew": 17.0,
-            "lwp": 150.0,
-        },
-    }
-
-    # Run Simulation Loop
-    for label, params in humidity_scenarios.items():
-        final_t, drop_c, final_lwp, fog_hour = simulate_cooling_with_dynamic_fog(
-            lwp_initial=params["lwp"],
-            initial_temp_c=params["temp"],
-            initial_dewpoint_c=params["dew"],
-        )
-
-        print(f"📡 Atmospheric Profile: {label}")
-        print(f"   -> Setup Constraints: Initial Temp = {params['temp']}°C | Dew Point = {params['dew']}°C")
-        print(f"   -> Final Morning Reading:   {final_t:.2f}°C")
-        print(f"   -> Net Temperature Drop:    {drop_c:.2f}°C")
-
-        if fog_hour is not None:
-            print(f"   -> 🌁 FOG FORMATION STATE:  Triggered at hour {fog_hour:.2f} of the night cycle")
-            print(f"   -> Accumulated Liquid Path: {final_lwp:.1f} g/m² (Dense ground fog blanket)")
-        else:
-            print("   -> 🌁 FOG FORMATION STATE:  Not triggered (Air column remained subsaturated)")
-        print("-" * 70)
+        "Dry Air Matrix (Low Dew Point)": {"temp": 25.

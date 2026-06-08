@@ -2,7 +2,7 @@
 from dynamic_memory_cache import DynamicMemoryCache
 
 # Create one shared cache instance for the whole app
-shared_cache = DynamicMemoryCache(percentage=0.25)
+shared_cache = DynamicMemoryCache(percentage=0.4)
 
 import multiprocessing as mp
 # mission_report_generator.py

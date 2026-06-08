@@ -15,6 +15,7 @@ from shapely.geometry import Polygon, Point
 
 # --- SECONDARY ENGINE DEPENDENCIES ---
 import aviation_physics        # Core math
+import telemetry_link
 import aviation_telemetry      # Data flow
 import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
@@ -22,43 +23,131 @@ import aerodynamic_matrix      # Lift/Drag logic
 import streamlit as st
 import multiprocessing as mp
 try:
-    import cupy as np  # Attempt to use GPU-accelerated array math
-    print("🚀 NVIDIA GPU Acceleration Engaged")
+    import cupy as xp  # NVIDIA GPU Acceleration
+    HAS_GPU = True
+    print("🚀 NVIDIA CUDA Cores Engaged: Spatial Ray-Casting Active")
 except ImportError:
-    import numpy as np # Fallback to standard CPU math
-    print("⚡ Using CPU (NVIDIA acceleration not detected)")
+    import numpy as xp # CPU Fallback
+    HAS_GPU = False
+    print("⚡ CPU Fallback: Standard Vectorized Spatial Check Active")
 
-def build_radar_polygon(telemetry_override=None, filepath, station_id):
+def build_radar_boundary_arrays(filepath):
     """
-    Reads the exported ExpertGPS text file and constructs a 2D boundary polygon.
+    Reads the exported ExpertGPS text file and extracts the vertices.
+    Instead of building a CPU-bound Shapely object, it extracts the raw floats
+    for the hardware arrays.
     """
-    # 1. Read the tab-separated data
-    df = pd.read_csv(filepath, sep='\t')
-    
-    # 2. Extract just the Longitude (X) and Latitude (Y) columns
-    # We drop any missing rows to ensure the polygon closes cleanly
-    coords = df[['Longitude', 'Latitude']].dropna().values.tolist()
-    
-    # 3. Create the mathematical polygon
-    radar_boundary = Polygon(coords)
-    
-    return {
-        "station_id": station_id,
-        "boundary_polygon": radar_boundary,
-        "area_sq_degrees": radar_boundary.area
-    }
+    try:
+        df = pd.read_csv(filepath, sep='\t')
+        coords = df[['Longitude', 'Latitude']].dropna()
+        
+        # Enforce 15-decimal precision standard on the boundary load
+        boundary_lons = [round(float(lon), 15) for lon in coords['Longitude']]
+        boundary_lats = [round(float(lat), 15) for lat in coords['Latitude']]
+        
+        return boundary_lats, boundary_lons
+    except Exception as e:
+        print(f"⚠️ Polygon build failure: {e}")
+        return [], []
 
-def check_if_nws_sensor_is_inside(radar_polygon, sensor_lat, sensor_lon):
+def batched_sensor_coverage_check(boundary_lats, boundary_lons, test_lats, test_lons):
     """
-    Checks if the specific NWS thermometer physically sits inside the jagged radar ring.
+    Hardware-accelerated Point-in-Polygon Ray-Casting Algorithm.
+    Checks an entire grid of thousands of sensors against the radar boundary simultaneously.
     """
-    nws_location = Point(sensor_lon, sensor_lat)
+    # 1. Load data to hardware (15-Decimal Standard)
+    poly_y = xp.array(boundary_lats, dtype=xp.float64)
+    poly_x = xp.array(boundary_lons, dtype=xp.float64)
+    t_y = xp.array(test_lats, dtype=xp.float64)
+    t_x = xp.array(test_lons, dtype=xp.float64)
     
-    if radar_polygon.contains(nws_location):
-        return "COVERED: Sensor is inside the horizontal radar footprint."
+    num_poly_vertices = len(poly_y)
+    num_test_points = len(t_y)
+    
+    # 2. Boolean mask representing if points are inside (starts False)
+    inside_mask = xp.zeros(num_test_points, dtype=xp.bool_)
+    
+    # 3. Vectorized Ray-Casting Loop (Loops over the polygon edges, NOT the test points)
+    # The GPU tests all 50,000 sensors against the current edge in one hardware cycle.
+    j = num_poly_vertices - 1
+    for i in range(num_poly_vertices):
+        # Condition 1: Is the test point's Y value strictly between the Y values of the edge?
+        cond1 = (poly_y[i] > t_y) != (poly_y[j] > t_y)
+        
+        # Condition 2: Does a horizontal ray cast from the test point intersect the edge?
+        # Avoid division by zero with + 1e-15
+        x_intersect = (poly_x[j] - poly_x[i]) * (t_y - poly_y[i]) / ((poly_y[j] - poly_y[i]) + 1e-15) + poly_x[i]
+        cond2 = t_x < x_intersect
+        
+        # If the ray intersects the boundary edge, flip the boolean status
+        intersecting = cond1 & cond2
+        inside_mask = inside_mask ^ intersecting
+        j = i
+
+    # 4. Return the computed coverage mask to the CPU
+    if HAS_GPU:
+        return inside_mask.get().tolist()
     else:
-        return "BLIND SPOT: Sensor is outside the horizontal radar footprint."
+        return inside_mask.tolist()
 
-# Example Execution for Salt Lake City (TSLC)
-# salt_lake_radar = build_radar_polygon('data.txt', 'TSLC')
-# print(check_if_nws_sensor_is_inside(salt_lake_radar['boundary_polygon'], 40.78, -111.97))
+def run_spatial_layer(boundary_filepath, test_coords):
+    """
+    Main orchestration function.
+    test_coords should be a list of dicts: [{'lat': 40.0, 'lon': -111.0}, ...]
+    """
+    print("📍 Running Batched Spatial Boundary Checks...")
+    
+    poly_lats, poly_lons = build_radar_boundary_arrays(boundary_filepath)
+    if not poly_lats:
+        return {"status": "ERROR", "reason": "Could not load polygon array"}
+    
+    # Extract arrays
+    test_lats = [coord.get('lat', 0.0) for coord in test_coords]
+    test_lons = [coord.get('lon', 0.0) for coord in test_coords]
+    
+    # Run the hardware check
+    coverage_results = batched_sensor_coverage_check(poly_lats, poly_lons, test_lats, test_lons)
+    
+    # Zip results back together
+    final_payload = []
+    for i in range(len(test_coords)):
+        final_payload.append({
+            "target_lat": round(float(test_lats[i]), 15),
+            "target_lon": round(float(test_lons[i]), 15),
+            "is_covered": bool(coverage_results[i])
+        })
+        
+    telemetry_link.update_global_state("spatial_models", "radar_coverage", final_payload)
+    print(f"✅ {len(test_coords)} sensors checked against spatial polygon.")
+    return final_payload
+
+
+if __name__ == "__main__":
+    print("=================================================================")
+    print("           HIGH-SPEED RADAR POLYGON GRID CHECK (BATCHED)         ")
+    print("=================================================================")
+    
+    # Creating a simulated radar box (A square from Lat 40-42, Lon -112 to -110)
+    simulated_radar_lats = [40.0, 42.0, 42.0, 40.0]
+    simulated_radar_lons = [-112.0, -112.0, -110.0, -110.0]
+    
+    # Simulating a massive grid of 5 sensors inside, outside, and on the edge
+    test_sensors = [
+        {"id": "SENSOR_1", "lat": 41.0, "lon": -111.5},  # Dead Center (Inside)
+        {"id": "SENSOR_2", "lat": 39.0, "lon": -111.5},  # Too far South (Outside)
+        {"id": "SENSOR_3", "lat": 41.5, "lon": -113.0},  # Too far West (Outside)
+        {"id": "SENSOR_4", "lat": 41.9, "lon": -110.1},  # Barely Inside
+        {"id": "SENSOR_5", "lat": 45.0, "lon": -100.0}   # Way Outside
+    ]
+    
+    # Run the batched hardware ray-caster
+    test_lats = [s["lat"] for s in test_sensors]
+    test_lons = [s["lon"] for s in test_sensors]
+    
+    results = batched_sensor_coverage_check(
+        simulated_radar_lats, simulated_radar_lons, test_lats, test_lons
+    )
+    
+    for idx, sensor in enumerate(test_sensors):
+        status = "🟢 COVERED" if results[idx] else "🔴 BLIND SPOT"
+        print(f"{sensor['id']} ({sensor['lat']}, {sensor['lon']}) -> {status}")

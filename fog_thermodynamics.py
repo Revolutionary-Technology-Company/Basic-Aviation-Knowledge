@@ -22,6 +22,11 @@ except ImportError:
 
 
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
+def calculate_future_position():
+    # This respects your manual override if you set one!
+    now = telemetry_link.time_manager.get_now() 
+    future = now + datetime.timedelta(hours=48)
+    return future
 def simulate_cooling_with_dynamic_fog(
     telemetry_override=None, lwp_initial=0.0, initial_temp_c=25.0, initial_dewpoint_c=12.0, hours=12.0
 ):

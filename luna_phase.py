@@ -4,7 +4,8 @@ import pandas as pd
 import multiprocessing as mp
 import matplotlib.pyplot as plt
 import telemetry_link
-import datetime
+from telemetry_link import time_manager
+now = time_manager.get_now()
 # --- SECONDARY ENGINE DEPENDENCIES ---
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow

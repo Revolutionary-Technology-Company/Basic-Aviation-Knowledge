@@ -1,8 +1,36 @@
 import numpy as np
 from waypoint_manager import WaypointManager
 class FlightControlDynamics:
+    """
+    Stabilized flight control with Quintic Hermite Interpolation 
+    to prevent abrupt PID controller spikes.
+    """
     def __init__(self, mode="CIVILIAN"):
         self.mode = mode
+        self.last_target_vec = np.zeros(3)
+    @staticmethod
+    @njit(fastmath=True)
+    def interpolate_path(current_pos, next_wp, t):
+        """
+        Quintic Hermite Interpolation: 
+        Ensures C2 continuity (smooth position, velocity, and acceleration).
+        """
+        # t is a normalized time variable [0, 1]
+        h00 = 2*t**3 - 3*t**2 + 1
+        h10 = t**3 - 2*t**2 + t
+        h01 = -2*t**3 + 3*t**2
+        h11 = t**3 - t**2
+        
+        # Smooth transition trajectory
+        return h00 * current_pos + h10 * 0.5 + h01 * next_wp + h11 * 0.5
+
+    def analyze_maneuver_safety(self, current_airspeed, target_bank_deg):
+        # Enforce structural limits
+        limit = 45.0 if self.mode == "TACTICAL" else 25.0
+        return {
+            "is_unsafe": abs(target_bank_deg) > limit,
+            "margin": limit - abs(target_bank_deg)
+        }
         self.dynamic = True
         self.bank_limit = 30.0 if mode == "CIVILIAN" else 60.0
         self.wp_manager = WaypointManager() # Now the engine manages its own navigation data

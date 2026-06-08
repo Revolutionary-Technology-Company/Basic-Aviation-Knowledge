@@ -218,6 +218,12 @@ The repository strictly uses `snake_case` filenames (e.g., `sfo_model.py`) to en
 
 -   **Utilities:** `ai_pirep.py` (Text-to-Speech reporting) and `live_telemetry.py` (Cross-platform sensor integration).
 
+PIREP Submission
+-------------------
+
+This repository includes an **AI-Assisted PIREP** module (`ai_pirep.py`). This utility generates FAA-standardized PIREP strings based on live flight data for electronic submission to the Aviation Weather Center, with a non-abbreviated text-to-speech output for radio transmission.
+
+> "A PIREP reporting good weather (often called a null report) is just as important to the forecast process as a PIREP reporting poor weather conditions."
 
 Professional & Academic Dedication
 -------------------------------------
@@ -228,13 +234,6 @@ This project is dedicated to the instructors at Green River College, whose guida
 -   **Academic Partner:** [Green River College Aviation Technology](https://www.greenriver.edu/students/academics/areas-of-interest/program-maps/trades-industrial-tech-aviation-natural-resources/aviation-technology/index.html)
 
 -   **Professional Reference:** [Fox Rothschild Aviation Practice](https://www.foxrothschild.com/aviation)
-
-PIREP Submission
--------------------
-
-This repository includes an **AI-Assisted PIREP** module (`ai_pirep.py`). This utility generates FAA-standardized PIREP strings based on live flight data for electronic submission to the Aviation Weather Center, with a non-abbreviated text-to-speech output for radio transmission.
-
-> "A PIREP reporting good weather (often called a null report) is just as important to the forecast process as a PIREP reporting poor weather conditions."
 
 License
 ----------

@@ -106,13 +106,13 @@ def get_live_position(telemetry_override=None, com_port="/dev/ttyUSB0", baudrate
                             
                             # Verify we have a valid 3D fix (msg.gps_qual > 0)
                             if msg.gps_qual > 0:
-                                elevation_ft = msg.altitude * 3.28084 if msg.altitude else 0.0
+                                elevation_ft = msg.altitude * 3.280839895013123 if msg.altitude else 0.0
                                 return {
                                     "status": "SUCCESS",
                                     "reference_frame": reference_body,
-                                    "latitude": msg.latitude,
-                                    "longitude": msg.longitude,
-                                    "elevation_ft": round(elevation_ft, 2),
+                                    "latitude": round(float(msg.latitude), 15),
+                                    "longitude": round(float(msg.longitude), 15),
+                                    "elevation_ft": round(float(elevation_ft), 15),
                                     "satellites_locked": msg.num_sats
                                 }
                     except pynmea2.ParseError:

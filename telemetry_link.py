@@ -1,3 +1,26 @@
+# telemetry_link.py
+import datetime
+
+class TimeManager:
+    def __init__(self):
+        self._manual_time = None
+
+    def get_now(self):
+        """Returns either the manual planning time or current UTC system time."""
+        return self._manual_time if self._manual_time else datetime.datetime.utcnow()
+
+    def set_manual_time(self, year, month, day, hour, minute):
+        """Sets a manual override for mission planning."""
+        self._manual_time = datetime.datetime(year, month, day, hour, minute)
+        print(f"⏰ [SYSTEM] Time locked to: {self._manual_time} UTC")
+
+    def reset_to_system_time(self):
+        """Resets to real-time synchronization."""
+        self._manual_time = None
+        print("⏰ [SYSTEM] Time synchronized to UTC.")
+
+# Instantiate for global access
+time_manager = TimeManager()
 # Updated JSON output for the Trim Computer
 payload = {
     "correction": {

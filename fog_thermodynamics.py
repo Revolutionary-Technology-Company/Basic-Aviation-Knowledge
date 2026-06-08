@@ -14,7 +14,7 @@ import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 import streamlit as st
-
+from datetime import datetime, timedelta
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
     print("🚀 NVIDIA GPU Acceleration Engaged")

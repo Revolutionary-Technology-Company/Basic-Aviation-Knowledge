@@ -3,8 +3,8 @@ import multiprocessing as mp
 import pandas as pd
 import matplotlib.pyplot as plt
 import telemetry_link
-import datetime
 from telemetry_link import time_manager
+import datetime
 now = time_manager.get_now()
 import astropy.coordinates as coord
 import astropy.units as u
@@ -25,6 +25,7 @@ try:
 except ImportError:
     import numpy as np # Fallback to standard CPU math
     print("⚡ Using CPU (NVIDIA acceleration not detected)")
+from datetime import datetime, timedelta
 
 def calculate_future_position():
     # This respects your manual override if you set one!

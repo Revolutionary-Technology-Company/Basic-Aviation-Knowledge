@@ -1,6 +1,7 @@
 # airport_data_manager.py
 import pandas as pd
 import os
+import telemetry_link
 
 class AirportDataManager:
     def __init__(self, src_path="src"):
@@ -17,9 +18,17 @@ class AirportDataManager:
         self.runways = self.runways.set_index('airport_ident')
         self.frequencies = self.frequencies.set_index('airport_ident')
 
-    def get_airport(self, ident):
-        """Returns airport metadata."""
-        return self.airports.loc[ident] if ident in self.airports.index else None
+    def get_airport(self, ident: str):
+        # --- NEW: REFERENCE FRAME LOCK ---
+        current_frame = telemetry_link.get_global_state("navigation", "planetary_reference_frame")
+        
+        # If the frame is NOT Earth, Earth airports are inaccessible
+        if current_frame != "Earth":
+            return None # Or raise an error: "Access Denied: Station not in current PRF"
+            
+        # Standard lookup
+        data = self.df[self.df['ident'] == ident.upper()]
+        return data.iloc[0].to_dict() if not data.empty else None
 
     def get_runways(self, ident):
         """Returns all runways for a given airport code."""

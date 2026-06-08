@@ -89,8 +89,8 @@ def run_icing_layer(telemetry_override=None):
     pirep_code, mass = get_live_icing_pirep_data(live_telemetry, env_data)
     
     payload = {
-        "environmental_temp_c": round(env_data["temp_c"], 2),
-        "accretion_rate_kg_hr": round(mass, 4),
+        "environmental_temp_c": round(env_data["temp_c"], 15),
+        "accretion_rate_kg_hr": round(mass, 15),
         "faa_pirep_code": pirep_code,
         "hazard_active": bool(mass > 0.1)
     }

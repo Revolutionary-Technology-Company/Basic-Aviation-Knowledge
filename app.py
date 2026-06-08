@@ -43,28 +43,25 @@ class AviationConsole(App):
         ("m", "run_master_physics", "Run Boeing Master Sequence")
     ]
 
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Horizontal(
-            Vertical(
-                Static("FLIGHT CONTROL", id="header"),
-                Checkbox("Enable S-Turn Energy Management", id="s-turn-toggle"),
-                Input(placeholder="Override: KEY=VAL", id="input"),
-                Static("Status: NOMINAL", id="status"),
-            ),
-            RichLog(id="log-panel", highlight=True),
-        )
-        yield Footer()
-
-    def on_checkbox_changed(self, event: Checkbox.Changed):
-        """Selector logic: Updates the WaypointManager state."""
-        if event.checkbox.id == "s-turn-toggle":
-            self.nav.set_s_turn_mode(event.value)
-            self.logger.write(f"S-Turn Selector: {'ON' if event.value else 'OFF'}")
     def __init__(self, mode: str, target: str):
         super().__init__()
         self.mode = mode
         self.target = target
+
+    def compose(self) -> ComposeResult:
+        """Merged compose method to prevent overwrite bug and apply CSS."""
+        yield Header()
+        yield Horizontal(
+            Vertical(
+                Static("FLIGHT CONSOLE", id="header"),
+                Checkbox("Enable S-Turn Energy Management", id="s-turn-toggle"),
+                Input(placeholder="Override: KEY=VAL", id="input"),
+                Static("Status: NOMINAL", id="status"),
+                id="control-panel"  # Matches CSS target
+            ),
+            RichLog(id="log-panel", highlight=True),
+        )
+        yield Footer()
 
     def on_mount(self):
         self.logger = self.query_one(RichLog)
@@ -79,23 +76,25 @@ class AviationConsole(App):
         except Exception as e:
             self.logger.write(f"CRITICAL: Init Failed: {e}")
 
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Horizontal(
-            Vertical(
-                Static("FLIGHT CONSOLE", id="header"),
-                Input(placeholder="Override: KEY=VAL", id="input"),
-                Static("Status: NOMINAL", id="status"),
-            ),
-            RichLog(id="log-panel", highlight=True),
-        )
-        yield Footer()
+    def on_checkbox_changed(self, event: Checkbox.Changed):
+        """Selector logic: Updates the WaypointManager state."""
+        if event.checkbox.id == "s-turn-toggle":
+            # Safety check to ensure nav is initialized before calling
+            if hasattr(self, 'nav'):
+                self.nav.set_s_turn_mode(event.value)
+            self.logger.write(f"S-Turn Selector: {'ON' if event.value else 'OFF'}")
 
     @avionics_safety_wrapper
     def on_input_submitted(self, event: Input.Submitted):
-        key, val = event.value.split("=")
-        self.logger.write(f"PARAM_UPDATE: {key} -> {val}")
-        self.query_one("#status").update(f"ACTIVE: {key.upper()} SET")
+        """Processes manual overrides with safety checks for bad input formatting."""
+        input_val = event.value.strip()
+        if "=" in input_val:
+            key, val = input_val.split("=", 1)
+            self.logger.write(f"PARAM_UPDATE: {key} -> {val}")
+            self.query_one("#status").update(f"ACTIVE: {key.upper()} SET")
+        else:
+            self.logger.write("ERROR: Input must be in KEY=VAL format.")
+        
         self.query_one("#input").value = ""
 
     def action_dispatch_telemetry(self):

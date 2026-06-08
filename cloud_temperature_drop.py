@@ -1,6 +1,8 @@
 # --- PRIMARY ENGINE: Cloud Radiative Cooling ---
 import numpy as np
 import pandas as pd
+import telemetry_link
+import datetime
 import matplotlib.pyplot as plt
 
 # --- SECONDARY ENGINE DEPENDENCIES ---
@@ -12,6 +14,12 @@ import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 import streamlit as st
 
+def calculate_future_position():
+    # This respects your manual override if you set one!
+    now = telemetry_link.time_manager.get_now() 
+    future = now + datetime.timedelta(hours=48)
+    return future
+    
 def simulate_nocturnal_cooling(lwp_g_m2, initial_temp_c=25.0, hours=12.0):
     """Simulates 12 hours of nighttime radiative cooling by solving the
     Stefan-Boltzmann surface boundary layer energy equations.

@@ -1,83 +1,198 @@
-# --- PRIMARY ENGINE: Aviation Matrix Visualization Exporter ---
-import pandas as pd
+# --- PRIMARY ENGINE: [Model Name] ---
 import numpy as np
-import logging
-import os
-import fcntl
-from typing import Dict, Any
+from numba import njit
+@njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
+import pandas as pd
+import csv
+import matplotlib.pyplot as plt
+from datetime import datetime
 
-# FAA-Grade Safety Wrapper for I/O
-def avionics_safety_wrapper(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logging.error(f"MATRIX EXPORT FAILURE: {e}")
-            return None
-    return wrapper
+# --- SECONDARY ENGINE DEPENDENCIES ---
+import aviation_physics        # Core math
+import aviation_telemetry      # Data flow
+import aircraft_perf           # Performance calculations
+import sensor_thermodynamics   # Env data scaling
+import aerodynamic_matrix      # Lift/Drag logic
+import streamlit as st
 
-class AviationMatrixExporter:
-    """
-    High-fidelity trajectory log processor.
-    Calculates S-Turn efficiency, drift, and structural loads.
-    """
-    
-    def __init__(self, log_dir="logs"):
-        self.log_dir = log_dir
+def run_multi_scenario_matrix_export(telemetry_override=None):
+    print("=================================================================")
+    print("     AVIATION PERFORMANCE SPREADSHEET COMPILING ENGINE          ")
+    print("=================================================================")
+    print("[Processing] Running parallel runway simulations...")
 
-    @avionics_safety_wrapper
-    def process_trajectory(self, input_csv: str, output_csv: str = "visual_matrix.csv"):
-        """
-        Processes PID-controlled flight data into a standardized visualization matrix.
-        Includes S-Turn flagging and thermal load analysis.
-        """
-        input_path = os.path.join(self.log_dir, input_csv)
-        output_path = os.path.join(self.log_dir, output_csv)
-        
-        df = pd.read_csv(input_path)
-        
-        # 1. Feature Engineering: S-Turn & Drift Correction Metrics
-        # Detect S-Turns: Bank command > threshold indicates active energy bleeding
-        df['Is_S_Turn'] = np.where(abs(df['BankAngle_deg']) > 5.0, 1, 0)
-        df['Lateral_Drift_m'] = df['CrossrangeDrift_km'] * 1000.0
-        
-        # 2. Schema Selection: Export for visualization
-        columns = [
-            'Time_s', 'Altitude_km', 'Downrange_km', 
-            'Lateral_Drift_m', 'BankAngle_deg', 
-            'AoA_deg', 'HeatFlux_W_cm2', 'Is_S_Turn',
-            'CommandedBank_deg'
-        ]
-        matrix = df[columns]
-        
-        # 3. Atomic Write (prevents file corruption during telemetry flow)
-        with open(output_path, "w") as f:
-            fcntl.flock(f, fcntl.LOCK_EX) # Atomic Lock
-            matrix.to_csv(f, index=False)
-            fcntl.flock(f, fcntl.LOCK_UN)
-            
-        logging.info(f"VISUALIZATION MATRIX EXPORTED: {output_path}")
-        return output_path
+    # 1. Physics Engine Constants
+    sigma = 5.670374e-8
+    k_lw = 0.022
+    epsilon_a = 0.76
+    epsilon_s = 0.95
+    T_atm_k = 285.15
+    C_s = 30000.0
+    L_v = 2.501e6
+    CRITICAL_GUST_SHEAR = 12.0
 
-    @avionics_safety_wrapper
-    def get_tactical_report(self, matrix_path: str) -> Dict[str, Any]:
-        """Generates the automated mission report for FAA review."""
-        df = pd.read_csv(matrix_path)
-        
-        return {
-            "Peak_Load_Gs": df['Acceleration_g'].max(),
-            "Peak_Thermal_Flux": df['HeatFlux_W_cm2'].max(),
-            "Final_Lateral_Offset_m": df['Lateral_Drift_m'].iloc[-1],
-            "S_Turn_Efficiency": df['Is_S_Turn'].sum() / len(df)
-        }
+    # 2. Runway Configuration Constants (Atlanta KATL Baseline)
+    station_elevation_ft = 1026.0
+    runway_heading_deg = 90.0  # Runway 09 (090 degrees)
+    runway_rad = np.radians(runway_heading_deg)
+    T_standard_at_elevation = 15.0 - (1.98 * (station_elevation_ft / 1000.0))
+    T_standard_f = (T_standard_at_elevation * 9.0 / 5.0) + 32.0
+
+    # Simulation Timeline (12 Hours = 720 single-minute rows)
+    total_minutes = 720
+    dt = 60.0
+
+    # 3. Define Parallel Multi-Scenario Parameters
+    # Format: "Scenario_Label": (Base_Wind, Gust_Scale)
+    scenarios = {
+        "Calm_Night_Stable_Fog": (2.0, 0.02),
+        "Breezy_Night_Scattered_Fog": (6.0, 0.08),
+        "Gale_Force_Crosswind_Clear": (14.0, 0.15),
+    }
+
+    # Generate spreadsheet file target name
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"runway_performance_matrix_{timestamp}.csv"
+
+    # 4. Open File and Write Structural Header Row
+    with open(filename, mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+
+        # Build headers dynamically to track each parameter inside adjacent spreadsheet columns
+        writer.writerow(
+            [
+                "Minute",
+                "Calm_Temp_C",
+                "Calm_Wind_mph",
+                "Calm_Wind_Dir",
+                "Calm_Headwind_mph",
+                "Calm_Crosswind_mph",
+                "Calm_Density_Alt_ft",
+                "Calm_LWP_g_m2",
+                "Breezy_Temp_C",
+                "Breezy_Wind_mph",
+                "Breezy_Wind_Dir",
+                "Breezy_Headwind_mph",
+                "Breezy_Crosswind_mph",
+                "Breezy_Density_Alt_ft",
+                "Breezy_LWP_g_m2",
+                "Gale_Temp_C",
+                "Gale_Wind_mph",
+                "Gale_Wind_Dir",
+                "Gale_Headwind_mph",
+                "Gale_Crosswind_mph",
+                "Gale_Density_Alt_ft",
+                "Gale_LWP_g_m2",
+            ]
+        )
+
+        # 5. Initialize States Separately for all Tracks
+        states = {}
+        for name in scenarios.keys():
+            states[name] = {
+                "temp": 28.0,  # Warm evening baseline start (°C)
+                "dew": 16.5,  # High moisture dew point
+                "lwp": 0.0,  # Clear sky start, condensation builds later
+            }
+
+        np.random.seed(42)  # Lock stochastic fluctuations for reproducible audits
+
+        # 6. Execute Parallel Minute-by-Minute Timeline Loops
+        for minute in range(1, total_minutes + 1):
+            row_data = [minute]
+
+            # Process each scenario sequentially for the current minute increment
+            for name, (base_wind, gust_scale) in scenarios.items():
+                # Retrieve current thermodynamic states
+                t_surf = states[name]["temp"]
+                t_dew = states[name]["dew"]
+                lwp_active = states[name]["lwp"]
+                t_surf_k = t_surf + 273.15
+
+                # Calculate wind velocity and wandering wind direction vector
+                current_wind = base_wind + np.random.exponential(
+                    scale=gust_scale * 100.0
+                )
+                current_wind_dir = (
+                    220.0 + np.sin(minute / 10.0) * 15.0
+                ) % 360  # Wandering southwest flow
+                wind_rad = np.radians(current_wind_dir)
+
+                # Process Runway Wind Vectors
+                angle_diff_rad = wind_rad - runway_rad
+                headwind_mph = current_wind * np.cos(angle_diff_rad)
+                crosswind_mph = current_wind * np.sin(angle_diff_rad)
+
+                # Check mechanical shear fog scattering
+                shear_active = False
+                if current_wind >= CRITICAL_GUST_SHEAR and lwp_active > 0:
+                    lwp_active = max(0.0, lwp_active - 2.5)
+                    shear_active = True
+
+                # Evaluate moisture saturation limits
+                latent_heat_flux = 0.0
+                if t_surf <= t_dew:
+                    if lwp_active > 5.0 and not shear_active:
+                        t_surf = t_dew
+                        t_surf_k = t_dew + 273.15
+
+                    condensation_rate = 0.15
+                    lwp_active += condensation_rate
+                    latent_heat_flux = (condensation_rate / 1000.0) * L_v / dt
+
+                # Compute Aviation Density Altitude
+                t_surf_f = (t_surf * 9.0 / 5.0) + 32.0
+                density_altitude_ft = station_elevation_ft + (
+                    120.0 * (t_surf_f - T_standard_f)
+                )
+
+                # Process background physics radiative math
+                R_clear_down = epsilon_a * sigma * (T_atm_k**4)
+                cloud_emissivity_factor = 1.0 - np.exp(-k_lw * lwp_active)
+                R_cloud_down = (
+                    cloud_emissivity_factor * sigma * (t_surf_k**4) * 0.22
+                )
+                total_longwave_down = R_clear_down + R_cloud_down
+                upwelling_longwave_out = epsilon_s * sigma * (t_surf_k**4)
+
+                Q_net = (
+                    total_longwave_down
+                    - upwelling_longwave_out
+                    + latent_heat_flux
+                )
+
+                # Step temperature state forward if not locked on dew point
+                if t_surf > t_dew or lwp_active <= 5.0:
+                    dT_dt = Q_net / C_s
+                    t_surf += dT_dt * dt
+
+                # Save updated states back to scenario memory matrix
+                states[name]["temp"] = t_surf
+                states[name]["lwp"] = lwp_active
+
+                # Pack metrics into row array fields
+                row_data.extend(
+                    [
+                        round(t_surf, 2),
+                        round(current_wind, 1),
+                        int(current_wind_dir),
+                        round(headwind_mph, 1),
+                        round(crosswind_mph, 1),
+                        round(density_altitude_ft, 1),
+                        round(lwp_active, 2),
+                    ]
+                )
+
+            # Write complete structural row to the CSV file system
+            writer.writerow(row_data)
+
+    print(f"=================================================================")
+    print(f"[Success] Combined multi-scenario log sheet successfully built.")
+    import multiprocessing as mp
+    print(f"File Saved to Workspace Path: '{filename}'")
+    print(f"Total Rows Compiled:        {total_minutes} data entries")
+    print("=================================================================")
+
 
 if __name__ == "__main__":
-    # Integration test for the matrix builder
-    exporter = AviationMatrixExporter(log_dir="logs")
-    # This expects the output from your PIDEntryEngine
-    try:
-        path = exporter.process_trajectory("optimized_3d_pid_trajectory.csv")
-        metrics = exporter.get_tactical_report(path)
-        print(f"Tactical Report Generated: {metrics}")
-    except Exception as e:
-        print(f"FAILED TO GENERATE REPORT: {e}")
+    run_multi_scenario_matrix_export()

@@ -138,29 +138,29 @@ This repository relies on a highly specific stack of mathematical, spatial, and 
 
 -   pynmea2: Decodes the raw $GPGGA and $GNGGA satellite text strings streaming from the dongle into clean, usable latitude, longitude, and elevation variables.
 
--   textual
+-   textual: Provides the framework for building high-performance, asynchronous terminal-based dashboards, allowing for rich, interactive flight monitoring in non-GUI environments.
 
--   "typer[all]"
+-   "typer[all]": Simplifies the creation of command-line interfaces for the cli_main.py controller, allowing for clean, auto-documented command structures to trigger flight physics engines and export telemetry payloads.
 
--   pydantic
+-   pydantic: Enforces strict data schemas for incoming aviation telemetry packets, ensuring that GPS coordinates, barometric inputs, and sensor data meet required constraints before they enter the simulation pipeline.
 
 -   pyserial
 
--   pyttsx3
+-   pyttsx3: Converts critical flight advisory, stall warnings, and system alert data into auditory outputs for in-flight notification, reducing pilot "heads-down" time by providing hands-free status updates.
 
--   cupy-cuda12x
+-   cupy-cuda12x: Offloads massive mathematical array operations to NVIDIA GPUs, providing the hardware-accelerated parallel processing required for real-time planetary wave matrices and large-scale atmospheric modeling.
 
 -   matplotlib
 
--   astropy
+-   astropy: Computes high-precision celestial and topocentric coordinates, critical for tracking lunar/solar positions to calculate real-time solar irradiance and celestial-based navigation offsets.
 
 -   requests
 
--   psutil
+-   psutil: Monitors the system resources of the flight computer, ensuring that intensive physics simulations (like the Rossby Wave Engine) do not starve the real-time telemetry processing loops of necessary CPU and RAM.
 
--   h5py          # For multi-dimensional HDF5 scientific data
+-   h5py: Manages the storage and high-speed retrieval of multi-dimensional atmospheric datasets, allowing you to handle large historical climate grids in a compact, hierarchical file format.
 
--   struct        # For binary CCSDS-style packet packing (built-in)
+-   struct: Parses raw binary data streams (CCSDS-style packets) at the byte level, converting low-level hardware sensor inputs into meaningful floating-point and integer variables for the telemetry engine.
 
 Key Module Directory
 -----------------------

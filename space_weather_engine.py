@@ -5,6 +5,8 @@ from dynamic_memory_cache import DynamicMemoryCache
 shared_cache = DynamicMemoryCache(percentage=0.25)
 
 import multiprocessing as mp
+import telemetry_link
+import datetime
 # --- PRIMARY ENGINE: Space Weather & Kinematics ---
 import os
 import struct
@@ -33,7 +35,11 @@ class KinematicForceEngine:
     def __init__(self): 
         # Universal Gravitational Constant (m^3 kg^-1 s^-2)
         self.G = 6.67430e-11
-
+    def calculate_future_position():
+    # This respects your manual override if you set one!
+    now = telemetry_link.time_manager.get_now() 
+    future = now + datetime.timedelta(hours=48)
+    return future
     def calculate_kinematics_and_forces(
         self,
         pos_t1,

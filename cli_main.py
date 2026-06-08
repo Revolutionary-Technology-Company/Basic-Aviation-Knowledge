@@ -21,6 +21,16 @@ PHYSICS_ENGINES = [
     "lunar_model", "rossby_model"
 ]
 
+@app.command()
+def time(
+    manual: bool = typer.Option(False, help="Set manual time"),
+    year: int = 2026, month: int = 6, day: int = 8, hour: int = 12, minute: int = 0
+):
+    """Sync or override system time for planning."""
+    if manual:
+        telemetry_link.time_manager.set_manual_time(year, month, day, hour, minute)
+    else:
+        telemetry_link.time_manager.reset_to_system_time()
 def initialize_avionics():
     """Boot sequence for the aviation knowledge system."""
     if not os.path.exists(SRC_DIR):

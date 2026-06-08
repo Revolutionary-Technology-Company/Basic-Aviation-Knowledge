@@ -1,5 +1,7 @@
 # memory_manager.py
+import telemetry_link
 from dynamic_memory_cache import DynamicMemoryCache
+from telemetry_link import time_manager
 
 # Create one shared cache instance for the whole app
 shared_cache = DynamicMemoryCache(percentage=0.25)

@@ -1,6 +1,11 @@
 import multiprocessing as mp
 # --- PRIMARY ENGINE: [Model Name] ---
-import numpy as np
+try:
+    import cupy as xp
+    HAS_GPU = True
+except ImportError:
+    import numpy as xp
+    HAS_GPU = False
 import pandas as pd
 import matplotlib.pyplot as plt
 #--- SECONDARY ENGINE DEPENDENCIES ---
@@ -19,6 +24,24 @@ try:
 except ImportError:
     import numpy as np # Fallback to standard CPU math
     print("⚡ Using CPU (NVIDIA acceleration not detected)")
+
+def calculate_dynamic_pressure_profile(velocity_array_m_s, air_density_array_kg_m3):
+    """
+    Batched calculation of Dynamic Pressure (q = 0.5 * rho * V^2)
+    Capable of computing the entire flight envelope simultaneously.
+    """
+    # 1. Load data to hardware (15-decimal precision standard)
+    velocities = xp.array(velocity_array_m_s, dtype=xp.float64)
+    densities = xp.array(air_density_array_kg_m3, dtype=xp.float64)
+    
+    # 2. Batched execution across the hardware cores
+    dynamic_pressure_array = 0.5 * densities * (velocities ** 2)
+    
+    # 3. Return to CPU as Python floats
+    if HAS_GPU:
+        return xp.round(dynamic_pressure_array, 15).get().tolist()
+    else:
+        return xp.round(dynamic_pressure_array, 15).tolist()
 
 def calculate_takeoff_roll(telemetry_override=None, temp_c, pressure_inhg, wind_mph, wind_dir_deg, runway_heading_deg, weight_lbs=2400.0):
     """

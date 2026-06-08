@@ -3,7 +3,7 @@ import multiprocessing as mp
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-
+now = datetime.utcnow()
 import astropy.coordinates as coord
 import astropy.units as u
 from astropy.time import Time

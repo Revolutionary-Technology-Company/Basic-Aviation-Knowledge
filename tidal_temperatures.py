@@ -5,7 +5,8 @@ from numba import njit
 import multiprocessing as mp
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import telemetry_link
+import datetime
 # --- SECONDARY ENGINE DEPENDENCIES ---
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow
@@ -14,6 +15,12 @@ import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 import streamlit as st
 
+def calculate_future_position():
+    # This respects your manual override if you set one!
+    now = telemetry_link.time_manager.get_now() 
+    future = now + datetime.timedelta(hours=48)
+    return future
+    
 def calculate_tidal_temperature_suppression(telemetry_override=None):
     print("\n--- Tidal Boundary Displaced Heat Flux Calculator ---")
     T_synoptic = float(input("Enter broad inland forecasted regional temperature (°F): "))

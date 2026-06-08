@@ -34,6 +34,53 @@ except ImportError:
 
 
 @njit(fastmath=True)
+# rossby_model.py (Core Math Update)
+
+def calculate_rossby_grid_kinematics(latitude_array_deg, zonal_wind_array_m_s, wave_number=4):
+    """
+    Batched calculation of Rossby wave phase speeds.
+    Inputs are expected to be Python lists or numpy arrays.
+    """
+    # 1. Load data into the active hardware (VRAM for GPU, RAM for CPU)
+    # Using float64 ensures the 15-decimal precision requirement is met at the hardware level
+    lats = xp.array(latitude_array_deg, dtype=xp.float64)
+    u_winds = xp.array(zonal_wind_array_m_s, dtype=xp.float64)
+    
+    # Constants (15-decimal precision)
+    OMEGA = 7.292115900000000e-5  # Earth angular velocity (rad/s)
+    R = 6371000.0                 # Earth radius (m)
+
+    # 2. Batched Math: The hardware computes all array elements simultaneously
+    lats_rad = xp.radians(lats)
+    
+    # Calculate Planetary Beta Gradient for all points
+    beta_array = (2.0 * OMEGA * xp.cos(lats_rad)) / R
+    
+    # Calculate zonal circumference and wavelength for all points
+    circumference_array = 2.0 * xp.pi * R * xp.cos(lats_rad)
+    wavelength_array = circumference_array / wave_number
+    
+    # Calculate Wave Phase Speed (c) for all points
+    # c = u - (beta * (L / 2pi)^2)
+    phase_speed_array = u_winds - (beta_array * (wavelength_array / (2.0 * xp.pi))**2)
+    
+    # Calculate Cross-Country Migration Rate (km/day)
+    migration_rate_array = (phase_speed_array * 86400.0) / 1000.0
+
+    # 3. Return data to the host CPU as standard Python floats/lists
+    # If using Cupy, .get() pulls it back from VRAM. If NumPy, tolist() just converts it.
+    if HAS_GPU:
+        return {
+            "beta_gradient": xp.round(beta_array, 15).get().tolist(),
+            "phase_speed_m_s": xp.round(phase_speed_array, 15).get().tolist(),
+            "migration_km_day": xp.round(migration_rate_array, 15).get().tolist()
+        }
+    else:
+        return {
+            "beta_gradient": xp.round(beta_array, 15).tolist(),
+            "phase_speed_m_s": xp.round(phase_speed_array, 15).tolist(),
+            "migration_km_day": xp.round(migration_rate_array, 15).tolist()
+        }
 def calculate_rossby_kinematics(u_zonal, station_lat_deg, wave_number, is_zonal_regime):
     """
     Core Mathematical Engine: Highly optimized C-compiled solver for 

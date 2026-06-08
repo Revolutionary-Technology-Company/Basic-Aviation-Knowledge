@@ -69,8 +69,8 @@ def calculate_and_export_lunar_log():
             writer.writerow(
                 [
                     time_steps[i].strftime("%Y-%m-%d %H:%M:%S"),
-                    round(alts[i], 3),
-                    round(azs[i], 3),
+                    round(alts[i], 15),
+                    round(azs[i], 15),
                     horizon_status,
                 ]
             )

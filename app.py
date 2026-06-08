@@ -4,7 +4,7 @@ import logging
 import time
 import os
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, Input, RichLog
+from textual.widgets import Header, Footer, Static, Input, RichLog, Checkbox
 from textual.containers import Vertical, Horizontal
 
 # --- CORE INTEGRATION MODULES ---
@@ -43,6 +43,24 @@ class AviationConsole(App):
         ("m", "run_master_physics", "Run Boeing Master Sequence")
     ]
 
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Horizontal(
+            Vertical(
+                Static("FLIGHT CONTROL", id="header"),
+                Checkbox("Enable S-Turn Energy Management", id="s-turn-toggle"),
+                Input(placeholder="Override: KEY=VAL", id="input"),
+                Static("Status: NOMINAL", id="status"),
+            ),
+            RichLog(id="log-panel", highlight=True),
+        )
+        yield Footer()
+
+    def on_checkbox_changed(self, event: Checkbox.Changed):
+        """Selector logic: Updates the WaypointManager state."""
+        if event.checkbox.id == "s-turn-toggle":
+            self.nav.set_s_turn_mode(event.value)
+            self.logger.write(f"S-Turn Selector: {'ON' if event.value else 'OFF'}")
     def __init__(self, mode: str, target: str):
         super().__init__()
         self.mode = mode

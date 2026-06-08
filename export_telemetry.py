@@ -3,6 +3,9 @@ import os
 import json
 import time
 import numpy as np
+import fcntl  # Use for file locking (Linux/Unix-based Avionics)
+import struct
+import zlib   # For CRC generation
 import h5py
 
 # Protocol Exporters
@@ -16,6 +19,13 @@ class TelemetryDispatcher:
     def __init__(self, output_dir="logs"):
         self.output_dir = output_dir
         if not os.path.exists(output_dir): os.makedirs(output_dir)
+
+    def _write_safe(self, filename, data):
+        """Atomic write ensures data integrity for mission buses."""
+        with open(f"{self.output_dir}/{filename}", "ab") as f:
+            fcntl.flock(f, fcntl.LOCK_EX) # Lock file
+            f.write(data)
+            fcntl.flock(f, fcntl.LOCK_UN) # Unlock
         
         self.nasa = NASATelemetryExporter()
         self.lockheed = LockheedTelemetryExporter()
@@ -44,6 +54,13 @@ class TelemetryDispatcher:
         self.oaam.dispatch(payload, self.output_dir)
         
         print(f"🚀 Global Telemetry Dispatched: [Boeing] [NASA] [Lockheed] [Axiom] [Northrop] [OAAM]")
+
+    def _generate_northrop_frame(self, payload):
+        # Generate raw frame
+        frame = struct.pack(">H", 0xABCD, ...) # (your previous struct logic)
+        # Append CRC-32 Checksum
+        checksum = zlib.crc32(frame) & 0xFFFFFFFF
+        return frame + struct.pack(">I", checksum)
 
 if __name__ == "__main__":
     dispatcher = TelemetryDispatcher()

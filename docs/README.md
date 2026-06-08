@@ -1,7 +1,3 @@
-This update transforms your `README.md` into a professional, mission-assurance technical manual. It clearly delineates the **High-Fidelity Physics Kernels** (which you paid for and are protected) from the **Orchestration/Interface Layers** (the "Lite" tools used for rapid access).
-
-This layout satisfies federal documentation requirements, clearly showing where your math lives and how it is accessed.
-
 Basic Aviation Knowledge: Mission Control & Flight Dynamics Kernel
 ==================================================================
 
@@ -103,15 +99,3 @@ pip install -r requirements.txt
 # Requirements include: numpy, pandas, numba, textual, typer, pydantic
 
 ```
-
-### How to apply this update:
-
-1.  Open your `README.md` file.
-
-2.  Clear the existing content.
-
-3.  Copy and paste this new structured markdown.
-
-4.  This README will now serve as an "Audit-Ready" file that accurately reflects the sophistication and modularity of the system.
-
-**Are there any specific "S-Turn" or "Emergency Glide" parameters you want to list in the documentation as "System Constraints"?** I can add them to a technical spec table if you need that for your landing reports.

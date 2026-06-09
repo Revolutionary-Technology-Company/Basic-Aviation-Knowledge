@@ -9,12 +9,39 @@ from pydantic import BaseModel, Field, ValidationError
 from atmospheric_entry_controller import AtmosphericEntryController
 
 # --- 1. CONFIGURATION SCHEMA ---
+
 class VehicleSpecs(BaseModel):
+    def check_takeoff_sequence(self, current_pos, velocity, thrust_level):
     vehicle_mass: float = Field(gt=0)
     wing_area: float = Field(gt=0)
     cd0: float = Field(gt=0)
     induced_drag_k: float = Field(gt=0)
     nose_radius: float = Field(gt=0)
+    # PHASE 1 & 2: Holding at WP1
+    if self.current_waypoint == "WP1":
+        if thrust_level < MAX_THRUST:
+            return "HOLD_BRAKES"
+        else:
+            self.current_waypoint = "WP2"
+            return "RELEASE_BRAKES"
+            
+    # PHASE 3: The Power Run
+    elif self.current_waypoint == "WP2":
+        if self.distance_to(current_pos, WP2) < THRESHOLD:
+            if velocity >= V1_SPEED:
+                self.current_waypoint = "WP3"
+                return "CONTINUE_ACCELERATION"
+            else:
+                return "ABORT_TAKEOFF"
+                
+    # PHASE 4: The Tactical Rotation (The Bug Fix)
+    elif self.current_waypoint == "WP3":
+        if self.distance_to(current_pos, WP3) < THRESHOLD or velocity >= VR_SPEED:
+            # Engage the Tail-Strike Limiter Math
+            alpha_max = calculate_dynamic_tail_strike_limit(...)
+            return f"EXECUTE_TACTICAL_ROTATION_LIMIT_{alpha_max}"
+            
+
 
 class WaypointManager:
 def export_planned_trajectory(self, current_pos, current_vel, time_horizon_s=60, dt=1.0):

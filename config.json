@@ -1,3 +1,10 @@
+try:
+    import cupy as xp
+    HAS_GPU = True
+except ImportError:
+    import numpy as xp
+    HAS_GPU = False
+@njit(fastmath=True)
 {
     "vehicle": {
     "name": "Starship_Class",

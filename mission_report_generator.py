@@ -1,7 +1,17 @@
 from dynamic_memory_cache import DynamicMemoryCache
 shared_cache = DynamicMemoryCache(percentage=0.04)
+try:
+    import cupy as xp
+    HAS_GPU = True
+    print("NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
+except ImportError:
+    import numpy as xp
+    HAS_GPU = False
+    print("CPU Fallback: Standard Vectorization Active (Performance)")
 import multiprocessing as mp
-import numpy as np
+import numba
+from numba import njit
+@njit(fastmath=True)
 import pandas as pd
 class MissionReportGenerator:
     """

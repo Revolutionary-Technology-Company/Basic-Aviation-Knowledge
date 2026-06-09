@@ -5,6 +5,8 @@ import importlib
 import logging
 from typing import Optional
 import telemetry_link
+from numba import njit
+@njit(fastmath=True)
 try:
     import cupy as xp
     HAS_GPU = True

@@ -1,4 +1,6 @@
 import math
+from dynamic_memory_cache import DynamicMemoryCache
+shared_cache = DynamicMemoryCache(percentage=0.04)
 import pandas as pd
 from numba import njit
 import telemetry_link

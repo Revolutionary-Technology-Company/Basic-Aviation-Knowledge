@@ -12,15 +12,15 @@ import aerodynamic_matrix      # Lift/Drag logic
 
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
-    print("🚀 NVIDIA GPU Acceleration Engaged")
+    print("NVIDIA GPU Acceleration Engaged")
 except ImportError:
     import numpy as np # Fallback to standard CPU math
-    print("⚡ Using CPU (NVIDIA acceleration not detected)")
+    print("Using CPU (NVIDIA acceleration not detected)")
     
 import streamlit as st
 
 def run_atl_layer(telemetry_override=None):
-    st.header("🍑 Atlanta Spikes (ATL / KFFC Area) Local Temperature Tendency")
+    st.header("Atlanta Spikes (ATL / KFFC Area) Local Temperature Tendency")
     st.markdown(r"### Equation: $\frac{\partial T}{\partial t} = -\vec{V} \cdot \nabla T + \left(\frac{\alpha}{c_p}\right)\omega + \frac{J}{c_p}$")
     
     col1, col2 = st.columns(2)
@@ -52,7 +52,7 @@ def run_atl_layer(telemetry_override=None):
         })
         st.table(df_atl)
         st.download_button(
-            label="💾 Download ATL Report Data (.csv)",
+            label="Download ATL Report Data (.csv)",
             data=df_atl.to_csv(index=False).encode('utf-8'),
             file_name="ATL_heat_spike_metrics.csv",
             mime="text/csv"

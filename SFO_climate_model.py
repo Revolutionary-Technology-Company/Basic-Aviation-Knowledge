@@ -3,6 +3,8 @@ try:
     print("NVIDIA GPU Acceleration Engaged")
 except ImportError:
     import numpy as np
+    from dynamic_memory_cache import DynamicMemoryCache
+    shared_cache = DynamicMemoryCache(percentage=0.1)
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt

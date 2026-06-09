@@ -1,17 +1,5 @@
 import cudf
 import numpy as np
-import pandas as pd
-import requests
-from numba import njit
-from io import StringIO
-from datetime import datetime
-import matplotlib.pyplot as plt
-import aviation_physics        # Core math
-import aviation_telemetry      # Data flow
-import aircraft_perf           # Performance calculations
-import sensor_thermodynamics   # Env data scaling
-import aerodynamic_matrix      # Lift/Drag logic
-import streamlit as st
 try:
     import cupy as xp
     HAS_GPU = True
@@ -20,17 +8,30 @@ except ImportError:
     import numpy as xp
     HAS_GPU = False
     print("CPU Fallback: Standard Vectorization Active (Performance)")
-@st.cache_data(ttl=3600)  # Cache the result for 1 hour to prevent API throttling
+from numba import njit
+@njit(fastmath=True)
+import matplotlib.pyplot as plt
+import pandas as pd
+import requests
+from datetime import datetime
+from io import StringIO
+import aircraft_perf
+import aviation_telemetry
+import sensor_thermodynamics
+import aviation_physics
+import aerodynamic_matrix
+import streamlit as st
+@st.cache_data(ttl=3600)
 def load_gpu_accelerated_config(jsonl_filepath):
     df = cudf.read_json(jsonl_filepath, lines=True)
     return df
 def fetch_rural_baseline(target_icao):
 USCRN_STATION_MAP = {
-    "KNYC": {"uscrn_id": "14735", "name": "NY Millbrook 3 W"},     # Rural baseline for NYC
-    "KORD": {"uscrn_id": "04808", "name": "IL Shabbona 5 NNE"},    # Rural baseline for Chicago
-    "KPHX": {"uscrn_id": "23199", "name": "AZ Tucson 11 W"},       # Rural desert baseline for Phoenix
-    "KSEA": {"uscrn_id": "94299", "name": "WA Quinault 4 NE"},     # Pristine baseline for Seattle
-    "KFFC": {"uscrn_id": "53838", "name": "GA Watkinsville 5 S"}   # Rural baseline for Atlanta
+    "KNYC": {"uscrn_id": "14735", "name": "NY Millbrook 3 W"},
+    "KORD": {"uscrn_id": "04808", "name": "IL Shabbona 5 NNE"},
+    "KPHX": {"uscrn_id": "23199", "name": "AZ Tucson 11 W"},
+    "KSEA": {"uscrn_id": "94299", "name": "WA Quinault 4 NE"},
+    "KFFC": {"uscrn_id": "53838", "name": "GA Watkinsville 5 S"}
 }
 def fetch_rural_baseline(target_icao):
     """

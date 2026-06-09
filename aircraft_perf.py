@@ -25,20 +25,20 @@ from numba import njit
 
 try:
     import cupy as np  # Attempt to use GPU-accelerated array math
-    print("🚀 NVIDIA GPU Acceleration Engaged")
+    print("NVIDIA GPU Acceleration Engaged")
 except ImportError:
     import numpy as np # Fallback to standard CPU math
-    print("⚡ Using CPU (NVIDIA acceleration not detected)")
+    print("Using CPU (NVIDIA acceleration not detected)")
     
 # --- HARDWARE ABSTRACTION LAYER (HAL) ---
 try:
     import cupy as xp  # NVIDIA GPU Acceleration
     HAS_GPU = True
-    print("🚀 NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
+    print("NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
 except ImportError:
     import numpy as xp # CPU Fallback
     HAS_GPU = False
-    print("⚡ CPU Fallback: Standard Vectorization Active (Performance)")
+    print("CPU Fallback: Standard Vectorization Active (Performance)")
 
 def calculate_performance_envelope_grid(
     airspeed_array_knots, altitude_array_ft, drag_coefficient_array

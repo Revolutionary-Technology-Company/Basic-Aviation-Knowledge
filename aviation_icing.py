@@ -1,7 +1,6 @@
 import multiprocessing as mp
 import telemetry_link
 import numpy as np
-import pandas as pd
 try:
     import cupy as xp
     HAS_GPU = True
@@ -10,6 +9,7 @@ except ImportError:
     import numpy as xp
     HAS_GPU = False
     print("CPU Fallback: Standard Vectorization Active (Performance)")
+import pandas as pd
 def calculate_icing_accretion(temp_c, rh_pct, rainfall_mm_hr, elevation_m, wind_mph=30.0):
     """Solves the coupled mass collection and thermodynamic freezing equations."""
     L_f = 3.34e5  # Latent heat of fusion for water (J/kg)

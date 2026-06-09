@@ -18,12 +18,6 @@ import aviation_telemetry
 import sensor_thermodynamics
 import streamlit as st
 import aerodynamic_matrix
-try:
-    import cupy as np
-    print("NVIDIA GPU Acceleration Engaged")
-except ImportError:
-    import numpy as np
-    print("Using CPU (NVIDIA acceleration not detected)")
 def calculate_wet_sensor_penalty(telemetry_override=None, t_ambient_c, humidity, wind_speed_mps, is_wooden_sensor=False, is_raining=True):
     """
     Adjusts the predicted official maximum temperature downward due to 

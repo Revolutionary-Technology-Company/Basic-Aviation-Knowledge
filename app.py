@@ -1,78 +1,63 @@
-# app.py
+try:
+    import cupy as xp
+    HAS_GPU = True
+    print("NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
+except ImportError:
+    import numpy as xp
+    HAS_GPU = False
+    print("CPU Fallback: Standard Vectorization Active (Performance)")
+import time
 import typer
+from dynamic_memory_cache import DynamicMemoryCache
+shared_cache = DynamicMemoryCache(percentage=0.47)
 from control_bridge.performance_bridge import crank_performance
-
 if __name__ == "__main__":
-    # STAGE 1: CRANK THE HARDWARE
-    # This must happen before any math kernels are imported
     crank_performance() 
-
-    # STAGE 2: INITIALIZE FLIGHT SYSTEM
     logging.basicConfig(filename="flight_system.log", level=logging.ERROR)
     app()
+from flight_control_dynamics import FlightControlDynamics
 import logging
-import time
 import os
 import numpy as np  # Added for state vectors
-
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, Input, RichLog, Checkbox
 from textual.containers import Vertical, Horizontal
-
-# --- CORE INTEGRATION MODULES ---
 from telemetry_link import TelemetryDispatcher
 from waypoint_manager import WaypointManager
-from flight_control_dynamics import FlightControlDynamics
 from export_telemetry import TelemetryDispatcher as GlobalDispatcher
 from schema_validator import validate_configuration
 import aviation_physics
 import rossby_model
 import fog_thermodynamics
 import radiation_model
-
 def master_boot_sequence():
     """
     Enforces a strict loading order to prevent race conditions 
     between CUDA, Numba, and Physics kernels.
     """
     logger = logging.getLogger("MasterBoot")
-    
-    # 1. HARDWARE ANCHOR (NVIDIA/CUDA)
-    logger.info("Initializing Hardware Anchor (NVIDIA/CUDA)...")
+    logger.info("Initializing Hardware Anchor (NVidia/Cuda)...")
     try:
         import numba.cuda
-        numba.cuda.get_current_device().reset() # Force GPU initialization
+        numba.cuda.get_current_device().reset()
     except Exception as e:
         logger.warning(f"CUDA Hardware not found, proceeding with CPU fallback: {e}")
-
-    # 2. MEMORY CACHE PRE-ALLOCATION
     logger.info("Pre-allocating Memory Cache...")
     import memory_manager
-    memory_manager.preallocate_buffer(size_mb=2048) # Your custom cache
-
-    # 3. COMPILATION KERNELS (NJIT)
+    memory_manager.preallocate_buffer(size_mb=2048)
     logger.info("Compiling NJIT Kernels...")
     import aviation_physics
-    aviation_physics.warmup_kernels() # Ensure JIT compiles before logic starts
-
-    # 4. APPLICATION LOGIC
+    aviation_physics.warmup_kernels()
     logger.info("Loading Aviation Logic Modules...")
     global WaypointManager, FlightControlDynamics
     from waypoint_manager import WaypointManager
     from flight_control_dynamics import FlightControlDynamics
-
-    logger.info("SYSTEM READY: Flight systems ready for taxi, flight, & landing. CERTIFIED PILOT(S) MUST OPERATE LANDING GEAR AND TOE BRAKES.")
-
-# In your main execution block:
+    logger.info("SYSTEM READY: Flight systems ready for taxi, flight, and landing. Pilot must operate landing gear and toe brakes.")
 if __name__ == "__main__":
     master_boot_sequence()
     app() # Launch your TUI
-
-# --- NEW ENGINE INTEGRATIONS ---
 from intent_engine import IntentEngine
 from collision_avoidance_app import CollisionMonitor
-
-# --- SAFETY WRAPPER: MISSION CRITICAL ---
 def avionics_safety_wrapper(func):
     """Isolates physics/IO from the TUI event loop."""
     def wrapper(*args, **kwargs):
@@ -82,8 +67,6 @@ def avionics_safety_wrapper(func):
             logging.error(f"SYSTEM FAULT: {e}")
             return None
     return wrapper
-
-# --- TUI ARCHITECTURE ---
 class AviationConsole(App):
     CSS = """
     Screen { align: center middle; }
@@ -91,23 +74,18 @@ class AviationConsole(App):
     #log-panel { width: 70%; height: 100%; border: solid white; }
     .collision-alert { border: solid red; color: red; text-style: bold; }
     """
-
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("d", "dispatch_telemetry", "Dispatch Global Telemetry"),
         ("m", "run_master_physics", "Run Boeing Master Sequence"),
-        ("s", "scan_trajectory", "Scan for Collisions")  # New Radar Binding
+        ("s", "scan_trajectory", "Scan for Collisions")
     ]
-
     def __init__(self, mode: str, target: str):
         super().__init__()
         self.mode = mode
         self.target = target
-
-        # State Vectors for Intent Engine Integration
-        self.current_pos = np.array([6371000.0, 0.0, 0.0]) # Earth surface baseline
-        self.current_vel = np.array([7500.0, 0.0, 0.0])    # Orbital velocity baseline
-
+        self.current_pos = np.array([6371000.0, 0.0, 0.0])
+        self.current_vel = np.array([7500.0, 0.0, 0.0])
     def compose(self) -> ComposeResult:
         """Merged compose method to prevent overwrite bug and apply CSS."""
         yield Header()
@@ -117,39 +95,30 @@ class AviationConsole(App):
                 Checkbox("Enable S-Turn Energy Management", id="s-turn-toggle"),
                 Input(placeholder="Override: KEY=VAL", id="input"),
                 Static("Status: NOMINAL", id="status"),
-                Static("COLLISION RADAR: STANDBY", id="radar-status"), # New Radar UI
-                id="control-panel"  # Matches CSS target
+                Static("COLLISION RADAR: STANDBY", id="radar-status"),
+                id="control-panel"
             ),
             RichLog(id="log-panel", highlight=True),
         )
         yield Footer()
-
     def on_mount(self):
         self.logger = self.query_one(RichLog)
         self.logger.write(f"SYSTEM BOOT: [Mode: {self.mode}] [Target: {self.target}]")
-
-        # Initialize Logic Engines
         try:
             self.nav = WaypointManager()
             self.computer = FlightControlDynamics(mode=self.mode)
             self.dispatcher = GlobalDispatcher(output_dir="logs")
-
-            # Initialize Collision & Intent Engines
             self.intent = IntentEngine()
             self.collision_monitor = CollisionMonitor(catalog_path="src/catalog-3.23.dat")
- 
             self.logger.write("SUCCESS: Avionics & Radar Engines Linked.")
         except Exception as e:
             self.logger.write(f"CRITICAL: Init Failed: {e}")
-
     def on_checkbox_changed(self, event: Checkbox.Changed):
         """Selector logic: Updates the WaypointManager state."""
         if event.checkbox.id == "s-turn-toggle":
-            # Safety check to ensure nav is initialized before calling
             if hasattr(self, 'nav'):
                 self.nav.set_s_turn_mode(event.value)
             self.logger.write(f"S-Turn Selector: {'ON' if event.value else 'OFF'}")
-
     @avionics_safety_wrapper
     def on_input_submitted(self, event: Input.Submitted):
         """Processes manual overrides with safety checks for bad input formatting."""
@@ -165,10 +134,8 @@ class AviationConsole(App):
         payload = {"temp_c": 15.0, "alt": 3000, "target": self.target}
         self.dispatcher.dispatch(payload)
         self.logger.write("DISPATCH: Boeing, NASA, Lockheed, Axiom, Northrop, OAAM.")
-
     def action_run_master_physics(self):
         self.logger.write("SEQUENCE: Executing Boeing Thermodynamics...")
-        # Invoke core modules directly
         fog_thermodynamics.run_fog_layer()
         rossby_model.run_rossby_layer()
         radiation_model.run_radiation_layer()
@@ -177,20 +144,13 @@ class AviationConsole(App):
     def action_scan_trajectory(self):
         """Executes the Intent -> Collision radar scan pipeline."""
         self.logger.write(">>> INITIATING TRAJECTORY INTENT SCAN...")
-
-        # 1. Ask WaypointManager where it intends to go
         planned_path = self.nav.export_planned_trajectory(self.current_pos, self.current_vel)
         if not planned_path:
             self.logger.write("Radar: No active target path to scan.")
             return
-        # 2. Refine path with IntentEngine 
         refined_intent = self.intent.calculate_maneuver_envelope(planned_path)
-
-        # 3. Check against cataloged objects
         collision_risk = self.collision_monitor.evaluate_risk(refined_intent)
-
         status_widget = self.query_one("#radar-status")
-
         if collision_risk['imminent']:
             self.logger.write(f"!!! COLLISION WARNING: Object {collision_risk['object_id']} at T-{collision_risk['time_to_impact']}s !!!")
             status_widget.update("RADAR: COLLISION IMMINENT")
@@ -199,10 +159,7 @@ class AviationConsole(App):
             self.logger.write("Radar: Trajectory Clear.")
             status_widget.update("RADAR: CLEAR")
             status_widget.remove_class("collision-alert")
-
-# --- TYPER CLI ENTRY POINT ---
 app = typer.Typer()
-
 @app.command()
 def start(
     mode: str = typer.Option("TACTICAL", help="Flight Profile"),
@@ -211,7 +168,6 @@ def start(
     """Initialize the integrated aviation knowledge console."""
     console = AviationConsole(mode=mode, target=target)
     console.run()
-
 if __name__ == "__main__":
     logging.basicConfig(filename="flight_system.log", level=logging.ERROR)
     app()

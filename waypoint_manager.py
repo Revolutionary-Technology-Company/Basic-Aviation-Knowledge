@@ -17,6 +17,23 @@ class VehicleSpecs(BaseModel):
     nose_radius: float = Field(gt=0)
 
 class WaypointManager:
+def export_planned_trajectory(self, current_pos, current_vel, time_horizon_s=60, dt=1.0):
+        """
+        Projects the current intercept vector forward in time for intent analysis.
+        """
+        if not self.active_space_target:
+            return []
+
+        trajectory = []
+        # Basic linear projection along the current velocity vector
+        # This will be replaced by your higher-fidelity intent_engine logic
+        for t in range(int(time_horizon_s / dt)):
+            future_pos = current_pos + (current_vel * t * dt)
+            trajectory.append({
+                "time_offset": t * dt,
+                "position": future_pos
+            })
+        return trajectory
     def __init__(self, config_path="config.json", dso_catalog_path="src/catalog-3.23.dat"):
         self.config_path = config_path
         self.dso_catalog_path = dso_catalog_path

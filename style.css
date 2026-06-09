@@ -4,13 +4,11 @@
     min-width: 200px;
     max-width: 300px;
 }
-
 /* Make images and charts fluid */
 img, canvas {
     max-width: 100% !important;
     height: auto !important;
 }
-
 /* Optimize font scaling for mobile */
 @media (max-width: 600px) {
     h1 { font-size: 1.5rem !important; }

@@ -6,7 +6,7 @@ if __name__ == "__main__":
     # STAGE 1: CRANK THE HARDWARE
     # This must happen before any math kernels are imported
     crank_performance() 
-    
+
     # STAGE 2: INITIALIZE FLIGHT SYSTEM
     logging.basicConfig(filename="flight_system.log", level=logging.ERROR)
     app()
@@ -60,14 +60,14 @@ def master_boot_sequence():
     global WaypointManager, FlightControlDynamics
     from waypoint_manager import WaypointManager
     from flight_control_dynamics import FlightControlDynamics
-    
+
     logger.info("SYSTEM READY: Flight systems ready for taxi, flight, & landing. CERTIFIED PILOT(S) MUST OPERATE LANDING GEAR AND TOE BRAKES.")
 
 # In your main execution block:
 if __name__ == "__main__":
     master_boot_sequence()
     app() # Launch your TUI
-    
+
 # --- NEW ENGINE INTEGRATIONS ---
 from intent_engine import IntentEngine
 from collision_avoidance_app import CollisionMonitor
@@ -91,7 +91,7 @@ class AviationConsole(App):
     #log-panel { width: 70%; height: 100%; border: solid white; }
     .collision-alert { border: solid red; color: red; text-style: bold; }
     """
-    
+
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("d", "dispatch_telemetry", "Dispatch Global Telemetry"),
@@ -103,7 +103,7 @@ class AviationConsole(App):
         super().__init__()
         self.mode = mode
         self.target = target
-        
+
         # State Vectors for Intent Engine Integration
         self.current_pos = np.array([6371000.0, 0.0, 0.0]) # Earth surface baseline
         self.current_vel = np.array([7500.0, 0.0, 0.0])    # Orbital velocity baseline
@@ -127,17 +127,17 @@ class AviationConsole(App):
     def on_mount(self):
         self.logger = self.query_one(RichLog)
         self.logger.write(f"SYSTEM BOOT: [Mode: {self.mode}] [Target: {self.target}]")
-        
+
         # Initialize Logic Engines
         try:
             self.nav = WaypointManager()
             self.computer = FlightControlDynamics(mode=self.mode)
             self.dispatcher = GlobalDispatcher(output_dir="logs")
-            
+
             # Initialize Collision & Intent Engines
             self.intent = IntentEngine()
             self.collision_monitor = CollisionMonitor(catalog_path="src/catalog-3.23.dat")
-            
+ 
             self.logger.write("SUCCESS: Avionics & Radar Engines Linked.")
         except Exception as e:
             self.logger.write(f"CRITICAL: Init Failed: {e}")
@@ -160,9 +160,7 @@ class AviationConsole(App):
             self.query_one("#status").update(f"ACTIVE: {key.upper()} SET")
         else:
             self.logger.write("ERROR: Input must be in KEY=VAL format.")
-        
         self.query_one("#input").value = ""
-
     def action_dispatch_telemetry(self):
         payload = {"temp_c": 15.0, "alt": 3000, "target": self.target}
         self.dispatcher.dispatch(payload)
@@ -175,27 +173,24 @@ class AviationConsole(App):
         rossby_model.run_rossby_layer()
         radiation_model.run_radiation_layer()
         self.logger.write("SEQUENCE: Physics layers synced.")
-
     @avionics_safety_wrapper
     def action_scan_trajectory(self):
         """Executes the Intent -> Collision radar scan pipeline."""
         self.logger.write(">>> INITIATING TRAJECTORY INTENT SCAN...")
-        
+
         # 1. Ask WaypointManager where it intends to go
         planned_path = self.nav.export_planned_trajectory(self.current_pos, self.current_vel)
-        
         if not planned_path:
             self.logger.write("Radar: No active target path to scan.")
             return
-
         # 2. Refine path with IntentEngine 
         refined_intent = self.intent.calculate_maneuver_envelope(planned_path)
-        
+
         # 3. Check against cataloged objects
         collision_risk = self.collision_monitor.evaluate_risk(refined_intent)
-        
+
         status_widget = self.query_one("#radar-status")
-        
+
         if collision_risk['imminent']:
             self.logger.write(f"!!! COLLISION WARNING: Object {collision_risk['object_id']} at T-{collision_risk['time_to_impact']}s !!!")
             status_widget.update("RADAR: COLLISION IMMINENT")
@@ -204,7 +199,6 @@ class AviationConsole(App):
             self.logger.write("Radar: Trajectory Clear.")
             status_widget.update("RADAR: CLEAR")
             status_widget.remove_class("collision-alert")
-
 
 # --- TYPER CLI ENTRY POINT ---
 app = typer.Typer()

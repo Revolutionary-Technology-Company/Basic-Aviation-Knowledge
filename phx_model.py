@@ -8,11 +8,13 @@ import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 import streamlit as st
 try:
-    import cupy as np  # Attempt to use GPU-accelerated array math
-    print("NVIDIA GPU Acceleration Engaged")
+    import cupy as xp
+    HAS_GPU = True
+    print("NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
 except ImportError:
-    import numpy as np # Fallback to standard CPU math
-    print("Using CPU (NVIDIA acceleration not detected)")
+    import numpy as xp
+    HAS_GPU = False
+    print("CPU Fallback: Standard Vectorization Active (Performance)")
 def run_phx_layer(telemetry_override=None):
     st.header("Phoenix (PHX / KIWA Area) Thermal Mass Retention Model")
     st.markdown(r"### Equation: $T_{\text{PHX}}(t) = T_{\text{desert}} + \Delta T_{\text{uhi\_max}} \cdot \left(1 - \exp\left(-\frac{t}{\tau_{\text{thermal}}}\right)\right) + \Delta T_{\text{station}}$") 

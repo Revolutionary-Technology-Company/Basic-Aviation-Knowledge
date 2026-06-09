@@ -1,106 +1,70 @@
+import astropy.units as u
+import astropy.coordinates as coord
+from astropy.time import Time
+now = time_manager.get_now()
 import datetime
 from datetime import datetime, timedelta
-# --- PRIMARY ENGINE: [Model Name] ---
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import telemetry_link
 from telemetry_link import time_manager
-now = time_manager.get_now()
-import astropy.coordinates as coord
-import astropy.units as u
-from astropy.time import Time
-
-# --- SECONDARY ENGINE DEPENDENCIES ---
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow
 import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
-import streamlit as st
-
 def calculate_future_position():
-    # This respects your manual override if you set one!
     now = telemetry_link.time_manager.get_now() 
     future = now + datetime.timedelta(hours=48)
     return future
-    
 def get_user_inputs(telemetry_override=None):
     """Prompts the user for decimal GPS values and year via terminal input."""
     print("--- Local Lunar Path Calculator Configuration ---")
+import streamlit as st
     try:
-        # Prompt for Latitude
         lat = float(input("Enter Latitude in decimal degrees (e.g., 47.6062): "))
         if not -90 <= lat <= 90:
             raise ValueError("Latitude must be between -90 and 90.")
-
-        # Prompt for Longitude
         lon = float(
             input("Enter Longitude in decimal degrees (e.g., -122.3321): ")
         )
         if not -180 <= lon <= 180:
             raise ValueError("Longitude must be between -180 and 180.")
-
-        # Prompt for Elevation
         elevation = float(
             input("Enter station elevation in meters (e.g., 45.0): ")
         )
-
-        # Prompt for Target Year
         year = int(input("Enter the target year (e.g., 2026): "))
-
         return year, lat, lon, elevation
-
     except ValueError as e:
         print(f"\n[Input Error]: {e}. Please enter valid numbers.")
         exit(1)
-
-
 def calculate_lunar_path(year, lat, lon, elevation_m):
     """Calculates the Moon's local horizon coordinates using Astropy
-
     based on the user's custom decimal GPS input.
     """
     print(f"\n[Processing] Computing 8,760 hourly data points for {year}...")
-
-    # Define location using inputs
     observer_loc = coord.EarthLocation(
         lat=lat * u.deg, lon=lon * u.deg, height=elevation_m * u.m
     )
-
-    # Generate hourly steps for the selected year
     start_time = datetime(year, 1, 1, 0, 0, 0)
     end_time = datetime(year, 12, 31, 23, 0, 0)
     time_steps = []
-
     current = start_time
     while current <= end_time:
         time_steps.append(current)
         current += timedelta(hours=1)
-
-    # Convert to Astropy tracking frames
     astropy_times = Time(time_steps)
     alt_az_frame = coord.AltAz(obstime=astropy_times, location=observer_loc)
-
-    # Run orbital math calculations
     moon_coords = coord.get_moon(astropy_times).transform_to(alt_az_frame)
-
     return time_steps, moon_coords.alt.deg, moon_coords.az.deg
-
-
 if __name__ == "__main__":
-    # 1. Capture dynamic user coordinates
     target_year, user_lat, user_lon, user_elev = get_user_inputs()
-
-    # 2. Run Orbit Engine
     times, alts, azs = calculate_lunar_path(
         target_year, user_lat, user_lon, user_elev
     )
-
-    # 3. Extract key metrics (Highest altitude pass of the year)
     max_idx = np.argmax(alts)
-
     print("\n=============================================")
     print("          ANNUAL LUNAR ANALYSIS             ")
     print("=============================================")
@@ -109,8 +73,6 @@ if __name__ == "__main__":
     print(f"Peak Azimuth:     {azs[max_idx]:.2f}° heading")
     print(f"Peak Time (UTC):  {times[max_idx]}")
     print("=============================================")
-
-    # 4. Generate Visualization
     plt.figure(figsize=(12, 6))
     plt.plot(
         times[:48],
@@ -127,5 +89,4 @@ if __name__ == "__main__":
     plt.ylabel("Elevation Vector (Degrees)")
     plt.grid(True, alpha=0.2)
     plt.legend()
-
     print("\n[Success] Interactive map data built. Use plt.show() to view graph.")

@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import math
 from dynamic_memory_cache import DynamicMemoryCache
 shared_cache = DynamicMemoryCache(percentage=0.04)

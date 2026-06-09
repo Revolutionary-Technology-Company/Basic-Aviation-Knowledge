@@ -1,29 +1,23 @@
 import socket
 from datetime import datetime
-
 def format_aviation_printout(icao_station, metar_data, taf_data, pireps):
     """
     Formats raw weather text data into a structured, easily readable slip.
     Uses fixed-width formatting to ensure perfect vertical alignment.
     """
     timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-    
-    # Constructing a clean text block using raw text and simple dividers
     print_job = []
     print_job.append("==========================================")
     print_job.append(f"          AVIATION WEATHER BRIEF          ")
     print_job.append(f"          STATION: {icao_station.upper()}              ")
     print_job.append(f"          PRINTED: {timestamp}        ")
     print_job.append("==========================================")
-    
     print_job.append("\n[CURRENT METAR]")
     print_job.append(metar_data)
-    
     print_job.append("\n[WEATHER PREDICTIONS / TAF]")
-    # Splitting long TAF lines so they don't break awkwardly on narrow paper
+
     for line in taf_data.split('\n'):
         print_job.append(line)
-        
     print_job.append("\n[PILOT REPORTS / PIREPS]")
     if pireps:
         for idx, pirep in enumerate(pireps, 1):
@@ -32,13 +26,10 @@ def format_aviation_printout(icao_station, metar_data, taf_data, pireps):
             print_job.append("-" * 30)
     else:
         print_job.append("NO ACTIVE PIREPS REPORTED FOR THIS AREA.")
-        
     print_job.append("\n\n==========================================")
     print_job.append("             END OF BRIEFING              ")
     print_job.append("==========================================\n\n\n\n")
-    
     return "\n".join(print_job)
-
 def send_to_network_printer(ip_address, text_payload):
     """Sends the raw formatted text string directly over network port 9100."""
     try:
@@ -50,8 +41,6 @@ def send_to_network_printer(ip_address, text_payload):
         print("Weather briefing dispatched to printer successfully.")
     except Exception as e:
         print(f"Printing failed: {e}")
-
-# Example Dataset pulled from your application/API
 station = "KJFK"
 metar = "KJFK 070851Z 11006KT 10SM FEW045 BKN250 18/14 A3002 RMK AO2 SLP164"
 taf = """KJFK 070550Z 0706/0812 13007KT P6SM SKC
@@ -61,8 +50,5 @@ pirep_list = [
     "UA /OV JFK045015 /TM 0830 /FL060 /TP B738 /TA M02 /WV 12015KT /TB LGT",
     "UUA /OV LGA /TM 0842 /FL020 /TP A320 /LLWS -15KT SFC-020 BY ARRIVING ACFT"
 ]
-
-# Generate and send the print job
 formatted_briefing = format_aviation_printout(station, metar, taf, pirep_list)
-# Replace with your actual printer's static IP address on your network
 send_to_network_printer("192.168.1.150", formatted_briefing)

@@ -20,6 +20,44 @@ import rossby_model
 import fog_thermodynamics
 import radiation_model
 
+def master_boot_sequence():
+    """
+    Enforces a strict loading order to prevent race conditions 
+    between CUDA, Numba, and Physics kernels.
+    """
+    logger = logging.getLogger("MasterBoot")
+    
+    # 1. HARDWARE ANCHOR (NVIDIA/CUDA)
+    logger.info("Initializing Hardware Anchor (NVIDIA/CUDA)...")
+    try:
+        import numba.cuda
+        numba.cuda.get_current_device().reset() # Force GPU initialization
+    except Exception as e:
+        logger.warning(f"CUDA Hardware not found, proceeding with CPU fallback: {e}")
+
+    # 2. MEMORY CACHE PRE-ALLOCATION
+    logger.info("Pre-allocating Memory Cache...")
+    import memory_manager
+    memory_manager.preallocate_buffer(size_mb=2048) # Your custom cache
+
+    # 3. COMPILATION KERNELS (NJIT)
+    logger.info("Compiling NJIT Kernels...")
+    import aviation_physics
+    aviation_physics.warmup_kernels() # Ensure JIT compiles before logic starts
+
+    # 4. APPLICATION LOGIC
+    logger.info("Loading Aviation Logic Modules...")
+    global WaypointManager, FlightControlDynamics
+    from waypoint_manager import WaypointManager
+    from flight_control_dynamics import FlightControlDynamics
+    
+    logger.info("SYSTEM READY: Flight systems anchored.")
+
+# In your main execution block:
+if __name__ == "__main__":
+    master_boot_sequence()
+    app() # Launch your TUI
+    
 # --- NEW ENGINE INTEGRATIONS ---
 from intent_engine import IntentEngine
 from collision_avoidance_app import CollisionMonitor

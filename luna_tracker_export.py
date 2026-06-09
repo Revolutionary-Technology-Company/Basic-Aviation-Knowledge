@@ -23,7 +23,6 @@ def get_user_inputs(telemetry_override=None):
 def calculate_and_export_lunar_log():
     year, lat, lon, elevation_m = get_user_inputs()
     print(f"\n[Processing] Modeling 1-year window path coordinates...")
-
     observer_loc = coord.EarthLocation(
         lat=lat * u.deg, lon=lon * u.deg, height=elevation_m * u.m
     )

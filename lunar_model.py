@@ -8,7 +8,6 @@ from telemetry_link import time_manager
 import datetime
 now = time_manager.get_now()
 from astropy.time import Time
-import telemetry_link          # NEW: Integrated Centralized Data Bus
 import aviation_physics        # Core math
 import aviation_telemetry      # Data flow
 import aircraft_perf           # Performance calculations

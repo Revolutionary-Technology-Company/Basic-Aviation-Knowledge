@@ -1,3 +1,9 @@
+import sensor_thermodynamics
+import aviation_telemetry
+import aircraft_perf
+import aviation_physics
+from dynamic_memory_cache import DynamicMemoryCache
+    shared_cache = DynamicMemoryCache(percentage=0.1)import multiprocessing as mp
 try:
     import cupy as np
     print("NVIDIA GPU Acceleration Engaged")
@@ -7,14 +13,8 @@ import pyttsx3
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import aviation_physics
-import aviation_telemetry
-import aircraft_perf
-import sensor_thermodynamics
 import aerodynamic_matrix
 import streamlit as st
-    from dynamic_memory_cache import DynamicMemoryCache
-    shared_cache = DynamicMemoryCache(percentage=0.1)import multiprocessing as mp
 from numba import njit
 @njit(fastmath=True)
 def generate_pirep_data(live_data, user_inputs):

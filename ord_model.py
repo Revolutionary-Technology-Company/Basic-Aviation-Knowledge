@@ -8,7 +8,7 @@ import aircraft_perf           # Performance calculations
 import sensor_thermodynamics   # Env data scaling
 import aerodynamic_matrix      # Lift/Drag logic
 def run_ord_layer(telemetry_override=None):
-    st.header("🌊 Chicago (ORD / KLOT Area) Lake Breeze Frontal Boundary")
+    st.header("Chicago (ORD / KLOT Area) Lake Breeze Frontal Boundary")
     st.markdown(r"### Equation: $T_{\text{ORD}}(x) = T_{\text{continental}} - \left[ \Delta T_{\text{lake}} \cdot \Theta(\Delta P) \cdot \exp\left(-\frac{x}{\lambda_{\text{lake}}}\right) \right]$")
     col1, col2 = st.columns(2)
     with col1:

@@ -1,6 +1,8 @@
 import numba
 import numpy as np
 import logging
+from dynamic_memory_cache import DynamicMemoryCache
+shared_cache = DynamicMemoryCache(percentage=0.45)
 from numba import njit
 @njit(fastmath=True)
 import wind_dynamics

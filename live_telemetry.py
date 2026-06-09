@@ -1,28 +1,21 @@
 # memory_manager.py
 from dynamic_memory_cache import DynamicMemoryCache
-
 # Create one shared cache instance for the whole app
 shared_cache = DynamicMemoryCache(percentage=0.25)
-
 # live_telemetry.py
 # Interfaces with USB DGPS/RTK and Barometric Elevation Dongles
-
 import os
 import time
 import sys
-
 # --- HARDWARE ACCELERATION & MATH ENGINES ---
 from numba import njit
 # live_telemetry.py
 # High-Speed, Else-Less NMEA Serial Parser for Universal Navigation
-
 import serial
 import time
 import pynmea2
-
 # --- CENTRALIZED DATA BUS ---
 import telemetry_link
-
 # --- HARDWARE ABSTRACTION LAYER (HAL) ---
 try:
     import cupy as xp  # NVIDIA GPU Acceleration
@@ -32,127 +25,100 @@ try:
 except ImportError:
     import numpy as xp # CPU Fallback
     HAS_GPU = False
-
+# live_telemetry.py
+# High-Speed Telemetry Gateway & Kinematic Solver
+# Reconstructed with Legacy Support & Else-Less Guard Clauses
 class LiveTelemetryDaemon:
-    """
-    Else-Less daemon for parsing serial GPS/GNSS data.
-    Designed to fail-fast on corrupted serial strings to maintain 0-latency polling.
-    """
     def __init__(self, port='/dev/ttyUSB0', baudrate=9600, reference_frame="Earth"):
         self.port = port
         self.baudrate = baudrate
         self.reference_frame = reference_frame
         self.serial_conn = None
-
-    def connect_serial(self):
-        """Else-less serial connection logic."""
-        try:
-            self.serial_conn = serial.Serial(self.port, self.baudrate, timeout=1)
-            print(f"📡 Serial link established on {self.port} at {self.baudrate} baud.")
-            return True
-        except serial.SerialException as e:
-            print(f"⚠️ Serial Connection Failed: {e}")
-            return False
-
+    def calculate_force_vectors(self, ax, ay, az, mass_kg):
+        """
+        High-speed kinematic solver.
+        Numba/CUDA-ready vector math.
+        """
+        # 🛑 GUARD: Validate Mass (Prevent undefined physics state)
+        if mass_kg <= 0:
+            return np.array([0.0, 0.0, 0.0])
+        # ✅ HAPPY PATH: Newton's Second Law (F=ma)
+        accel_vec = np.array([ax, ay, az])
+        return accel_vec * mass_kg
+    def get_live_position(self, telemetry_override=None):
+        """
+        Telemetry gateway with Synthetic/Override injection capability.
+        """
+        # 🛑 GUARD 1: Override Injection (Mission Planning / Emergency Synthetic Data)
+        if telemetry_override:
+            return {
+                "status": "SUCCESS (OVERRIDE)",
+                "reference_frame": self.reference_frame,
+                "latitude": telemetry_override.get("lat", 0.0),
+                "longitude": telemetry_override.get("lon", 0.0),
+                "elevation_ft": telemetry_override.get("elevation_ft", 0.0),
+                "satellites_locked": "SIMULATED"
+            }
+        # 🛑 GUARD 2: No serial connection exists to poll
+        if not self.serial_conn or not self.serial_conn.is_open:
+            return {"status": "ERROR", "reason": "NO_SERIAL_CONNECTION"}
+        # ✅ HAPPY PATH: Logic defaults to live serial stream via watchdog
+        return {"status": "POLLING_ACTIVE", "reference_frame": self.reference_frame}
     def parse_nmea_sentence(self, line: str):
         """
         Else-less NMEA Serial Parser.
-        Drops corrupted or irrelevant strings instantly to free CPU cycles.
+        Fail-fast on corruption.
         """
-        # 🛑 GUARD 1: Ignore irrelevant or empty serial sentences
+        # 🛑 GUARD 1: Ignore irrelevant headers
         if not line.startswith(('$GPGGA', '$GNGGA', '$GPRMC', '$GNRMC')):
             return None
-
-        # 🛑 GUARD 2: Catch serial bus corruption (ParseError)
+        # 🛑 GUARD 2: Catch serial corruption
         try:
             msg = pynmea2.parse(line)
         except pynmea2.ParseError:
             return None
-
-        # 🛑 GUARD 3: Validate satellite fix for GGA sentences (0 = Invalid)
+        # 🛑 GUARD 3: Validate fix
         if hasattr(msg, 'gps_qual') and getattr(msg, 'gps_qual', 0) == 0:
             return None
-
-        # 🛑 GUARD 4: Validate active status for RMC sentences ('V' = Void, 'A' = Active)
-        if hasattr(msg, 'status') and getattr(msg, 'status', 'V') != 'A':
-            return None
-
-        # ✅ HAPPY PATH: Valid 3D Fix Acquired
-        lat = getattr(msg, 'latitude', 0.0)
-        lon = getattr(msg, 'longitude', 0.0)
-        
-        # Safely extract altitude (RMC sentences do not carry altitude)
+        # ✅ HAPPY PATH: Valid Fix
         alt_m = getattr(msg, 'altitude', 0.0)
-        alt_m = alt_m if alt_m is not None else 0.0
-        elevation_ft = alt_m * 3.280839895013123
-        
-        sats = getattr(msg, 'num_sats', 0)
-        
-        # Enforce 15-decimal precision standard for the flight computer
         return {
             "status": "SUCCESS",
             "reference_frame": self.reference_frame,
-            "latitude": round(float(lat), 15),
-            "longitude": round(float(lon), 15),
-            "elevation_ft": round(float(elevation_ft), 15),
-            "satellites_locked": int(sats)
+            "latitude": round(float(getattr(msg, 'latitude', 0.0)), 15),
+            "longitude": round(float(getattr(msg, 'longitude', 0.0)), 15),
+            "elevation_ft": round(float(alt_m * 3.28084), 15),
+            "satellites_locked": getattr(msg, 'num_sats', 0)
         }
-
     def run_watchdog_loop(self):
-        """Continuous high-speed polling of the serial bus."""
-        # 🛑 GUARD 1: Cannot run without a serial connection
-        if not self.connect_serial():
-            print("🛑 Daemon aborted: No serial device found.")
+        """High-speed serial polling."""
+        try:
+            self.serial_conn = serial.Serial(self.port, self.baudrate, timeout=1)
+        except serial.SerialException:
+            print("🛑 Telemetry aborted: Port inaccessible.")
             return
-            
-        print(f"🚀 Live Telemetry Daemon Active. Polling {self.reference_frame} NMEA stream...")
-        
+        print(f"🚀 Telemetry Daemon Active: {self.reference_frame}")
         while True:
-            # 1. Attempt to read the serial bus
+            # 🛑 GUARD: Handle serial drops
             try:
-                raw_line = self.serial_conn.readline()
-            except serial.SerialException:
-                print("⚠️ Serial bus dropped. Attempting reconnect...")
-                time.sleep(1.0)
-                self.connect_serial()
+                line = self.serial_conn.readline().decode('ascii', errors='ignore').strip()
+            except Exception:
                 continue
-
-            # 🛑 GUARD 2: Empty read (Timeout)
-            if not raw_line:
+            # 🛑 GUARD: Empty read
+            if not line:
                 continue
-
-            # 2. Decode the raw bytes
-            try:
-                decoded_line = raw_line.decode('ascii', errors='ignore').strip()
-            except UnicodeDecodeError:
-                continue
-
-            # 3. Parse the data
-            parsed_data = self.parse_nmea_sentence(decoded_line)
-            
-            # 🛑 GUARD 3: Invalid or dropped sentence
+            parsed_data = self.parse_nmea_sentence(line)
+            # 🛑 GUARD: Parsing failure
             if not parsed_data:
                 continue
-
-            # ✅ HAPPY PATH: Push validated, 15-decimal precision data to the Global State
+            # ✅ HAPPY PATH: Update Global Bus
             telemetry_link.update_global_state("navigation", "live_gps", parsed_data)
-            telemetry_link.update_global_state("navigation", "planetary_reference_frame", self.reference_frame)
-
-
+            time.sleep(0.01) # 100Hz Polling
 if __name__ == "__main__":
-    print("=================================================================")
-    print("        UNIVERSAL GPS TELEMETRY DAEMON (ELSE-LESS KERNEL)        ")
-    print("=================================================================\n")
-    
-    # Initialize the Daemon. 
-    # Change port to 'COM3' or similar if running on Windows.
-    # Change reference_frame to "Mars" or "Luna" if plugged into the Universal mapper.
+    # Initialize Engine
     daemon = LiveTelemetryDaemon(port='/dev/ttyUSB0', baudrate=9600, reference_frame="Earth")
-    
+    # Run the Watchdog
     try:
         daemon.run_watchdog_loop()
     except KeyboardInterrupt:
-        print("\n🛑 Telemetry Daemon terminated by operator.")
-        if daemon.serial_conn and daemon.serial_conn.is_open:
-            daemon.serial_conn.close()
-            print("🔒 Serial port closed safely.")
+        print("\n🛑 Telemetry Shutdown.")

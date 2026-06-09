@@ -11,6 +11,7 @@ import aviation_telemetry
 import aircraft_perf
 import sensor_thermodynamics
 import aerodynamic_matrix
+import numba
 from numba import njit
 @njit(fastmath=True)
 try:

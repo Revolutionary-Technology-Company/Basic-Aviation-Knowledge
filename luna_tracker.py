@@ -1,3 +1,6 @@
+import numba
+from numba import njit
+@njit(fastmath=True)
 import astropy.coordinates as coord
 import astropy.units as u
 from astropy.time import Time
@@ -6,15 +9,23 @@ import datetime
 from datetime import datetime, timedelta
 import multiprocessing as mp
 import numpy as np
+try:
+    import cupy as xp
+    HAS_GPU = True
+    print("NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
+except ImportError:
+    import numpy as xp
+    HAS_GPU = False
+    print("CPU Fallback: Standard Vectorization Active (Performance)")
 import pandas as pd
 import matplotlib.pyplot as plt
 import telemetry_link
 from telemetry_link import time_manager
-import aviation_physics        # Core math
-import aviation_telemetry      # Data flow
-import aircraft_perf           # Performance calculations
-import sensor_thermodynamics   # Env data scaling
-import aerodynamic_matrix      # Lift/Drag logic
+import aviation_physics
+import aviation_telemetry
+import aircraft_perf
+import sensor_thermodynamics
+import aerodynamic_matrix
 def calculate_future_position():
     now = telemetry_link.time_manager.get_now() 
     future = now + datetime.timedelta(hours=48)

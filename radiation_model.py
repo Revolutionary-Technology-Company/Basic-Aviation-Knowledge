@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numba
 import math
 import pandas as pd
 from dynamic_memory_cache import DynamicMemoryCache
@@ -8,11 +9,13 @@ import aviation_physics
 import aviation_telemetry
 import telemetry_link
 try:
-    import cupy as np  # Attempt to use GPU-accelerated array math
-    print("NVIDIA GPU Acceleration Engaged (Radiation Matrix)")
+    import cupy as xp
+    HAS_GPU = True
+    print("NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
 except ImportError:
-    import numpy as np # Fallback to standard CPU math
-    print("Using CPU (NVIDIA acceleration not detected)")
+    import numpy as xp
+    HAS_GPU = False
+    print("CPU Fallback: Standard Vectorization Active (Performance)")
 STEFAN_BOLTZMANN = 5.670374419e-8  # W / (m^2 * K^4)
 LUMINOSITY_SUN_W = 3.828e26        # Watts
 RADIUS_SUN_M     = 6.957e8         # Meters

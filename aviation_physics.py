@@ -6,7 +6,6 @@ import multiprocessing as mp
 import numpy as np
 from numba import njit
 @njit(fastmath=True) # fastmath enables hardware-level floating point optimizations
-import pandas as pd
 import matplotlib.pyplot as plt
 import math
 import aviation_physics
@@ -14,7 +13,6 @@ import aviation_telemetry
 import aircraft_perf
 import sensor_thermodynamics
 import aerodynamic_matrix
-import streamlit as st
 """ aviation_physics.py """
 """ Enterprise Batched Atmospheric & Aerodynamic Kernel """
 """ Optimized: Else-Less Guard Clauses | CUDA/NumPy HAL | Numba | Memory Cache """

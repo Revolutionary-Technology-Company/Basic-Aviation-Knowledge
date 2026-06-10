@@ -1,0 +1,23 @@
+{
+  "aircraft": {
+    "manufacturer": "Lockheed Martin",
+    "model": "F-35A Lightning II",
+    "propulsion_system": "Pratt & Whitney F135-PW-100"
+  },
+  "exhaust_geometry": {
+    "fixed_hull_length_meters": 2.450,
+    "nozzle_exit_radius_meters": 0.435,
+    "static_end_correction_factor": 0.6
+  },
+  "gas_composition_constants": {
+    "description": "Exhaust plume chemical gas profile under standard military jet fuel conditions",
+    "mixture_gas_constant_j_kg_k": 291.40,
+    "ratio_specific_heats_gamma": 1.334
+  },
+  "acoustic_tuning_bounds": {
+    "target_harmonic_order": 1,
+    "minimum_frequency_threshold_hz": 20.0,
+    "maximum_frequency_threshold_hz": 4500.0,
+    "noise_floor_amplitude_threshold": 0.005
+  }
+}

@@ -124,6 +124,32 @@ def calculate_crab_angle(wind_speed_kts, wind_dir_deg, runway_heading_deg, tas_k
     theta_deg = math.degrees(theta_rad)
 
     return theta_deg, v_crosswind
+
+    import math
+
+def compute_isa_temperature(altitude_ft):
+    """ ISA Temperature Model (Celsius) """
+    
+    """ GUARD 1: Stratosphere Tropopause clamp """
+    """ Above 36,089 ft, temperature stops dropping and holds at -56.5 C """
+    if altitude_ft >= 36089.0:
+        return -56.5
+        
+    """ HAPPY PATH: Standard lapse rate (-1.98 C per 1000 ft) """
+    return 15.0 - (1.98 * (altitude_ft / 1000.0))
+
+def calculate_mach_number(tas_kts, temp_c):
+    """ Calculates Mach Number based on local speed of sound """
+    
+    """ GUARD 1: Aircraft is stationary """
+    if tas_kts <= 0.0: 
+        return 0.0
+        
+    """ HAPPY PATH: a = 38.945 * sqrt(Temp_Kelvin) in knots """
+    temp_k = temp_c + 273.15
+    speed_of_sound_kts = 38.945 * math.sqrt(temp_k)
+    
+    return tas_kts / speed_of_sound_kts
     """ Store in memory cache before returning """
     shared_cache.add_to_cache(cache_key, final_array)
     return final_array

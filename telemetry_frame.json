@@ -1,0 +1,27 @@
+{
+  "timestamp_utc": "2026-06-10T23:45:12.842Z",
+  "frame_id": 48102,
+  "engine_state": {
+    "core_rpm": 13450.0,
+    "exhaust_gas_temperature_kelvin": 1050.5
+  },
+  "acoustic_listener_stream": {
+    "microphone_status": "active",
+    "rms_amplitude": 0.0421,
+    "captured_motor_frequency_hz": 420.7,
+    "spectral_leakage_mitigation": "hann_window"
+  },
+  "acoustic_tuning_matrix": {
+    "computed_speed_of_sound_m_s": 639.12,
+    "target_effective_length_meters": 0.380,
+    "target_physical_length_meters": 0.119,
+    "current_helmholtz_number": 10.1245,
+    "node_alignment_error_meters": -2.331
+  },
+  "software_control_outputs": {
+    "system_status": "tuning_required",
+    "energy_loss_percentage": 0.0412,
+    "recommended_thermal_delta_kelvin": +18.4,
+    "actuator_override_active": false
+  }
+}

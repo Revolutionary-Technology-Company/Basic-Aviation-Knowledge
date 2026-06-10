@@ -1,5 +1,3 @@
-import numba
-import numpy as np
 import logging
 from dynamic_memory_cache import DynamicMemoryCache
 shared_cache = DynamicMemoryCache(percentage=0.45)
@@ -12,53 +10,69 @@ import fog_thermodynamics
 import aviation_icing
 import aviation_physics
 import SFO_climate_model
-class IntentEngine:
-    def __init__(self):
-        self.logger = logging.getLogger("IntentEngine")
-        self.logger.info("Advanced Intent Engine active: Multi-Physics Suite Enabled.")
-    def calculate_environmental_drift(self, position, velocity, time_offset_s):
+""" intent_engine.py """
+""" Distributed Kinematic Intent Profiler """
+""" Optimized: Else-Less Guard Clauses | 15-Decimal Precision """
+
+class IntruderIntentAnalyst:
+    """ 
+    Isolated Telemetry Module. Tracks historical memory for individual aircraft 
+    and handles the high-level kinematic math to diagnose pilot intent profiles.
+    """
+    def __init__(self, dt=1.0):
+        self.dt = float(dt)
+        self.G_METERS_SEC2 = 9.806650000000000
+        self.FT_TO_METERS = 0.304800000000000
+        
+        """ Memory storage dictionary per ICAO hex """
+        self.history = {}
+
+    def update_history(self, icao, track, baro_rate):
+        """ Stores the current data state for derivative tracking on the next cycle. """
+        self.history[icao] = {
+            "prev_track": float(track),
+            "prev_baro_rate": float(baro_rate)
+        }
+
+    def diagnose_behavior_profile(self, icao, current_gs, current_track, current_baro_rate):
+        """ 
+        Executes second-order derivative checks using else-less guard clauses. 
+        Returns an intent string and raw computed g-forces.
         """
-        Applies dynamic weather, climate, and gravitational forces to alter 
-        the intended velocity vector over time.
-        """
-        wind_vector = wind_dynamics.calculate_wind_vector(position) if hasattr(wind_dynamics, 'calculate_wind_vector') else np.array([0,0,0])
-        air_density = SFO_climate_model.get_air_density(position[2]) if hasattr(SFO_climate_model, 'get_air_density') else 1.225
-        temp_offset = fog_thermodynamics.get_temperature_drop(position) if hasattr(fog_thermodynamics, 'get_temperature_drop') else 0.0 
-        ice_drag_factor = aviation_icing.compute_drag_penalty(temp_offset, velocity) if hasattr(aviation_icing, 'compute_drag_penalty') else 0.0
-        gravity_vector = aviation_physics.compute_gravity(position) if hasattr(aviation_physics, 'compute_gravity') else np.array([0, -9.81, 0])
-        lunar_perturbation = lunar_model.compute_tidal_force(position) if hasattr(lunar_model, 'compute_tidal_force') else np.array([0,0,0])
-        net_velocity = velocity + wind_vector - (velocity * ice_drag_factor)
-        net_acceleration = gravity_vector + lunar_perturbation
-        return net_velocity + (net_acceleration * time_offset_s)
-    def calculate_maneuver_envelope(self, planned_path):
-        """Refines the baseline path by subjecting it to the physical environment."""
-        refined_path = []
-        for point in planned_path:
-            t = point['time_offset']
-            pos = point['position']
-            vel = point.get('velocity', np.array([250.0, 0.0, 0.0]))     
-            drifted_vel = self.calculate_environmental_drift(pos, vel, t)
-            adjusted_pos = pos + (drifted_vel * t)      
-            refined_path.append({
-                "time_offset": t,
-                "position": adjusted_pos,
-                "velocity": drifted_vel,
-                "environmental_confidence": 0.85 # Degrades dynamically in radar logic
-            })   
-        return refined_path
-    def evaluate_tactical_intent(self, v_intruder, u_track, flight_path_angle, is_oscillating):
-        """
-        Classifies the intruder's maneuver based on kinematic geometry.
-        """
-        intent_flag = "UNKNOWN"
-        norm_v = np.linalg.norm(v_intruder)
-        norm_u = np.linalg.norm(u_track)
-        if norm_v > 0 and norm_u > 0:
-            rho_sid = np.dot(v_intruder, u_track) / (norm_v * norm_u)
-            if rho_sid > 0.99: # Delta-psi < 8 degrees
-                return "ON_PUBLISHED_ARRIVAL_ROUTE"     
-        if is_oscillating:
-            intent_flag = "S_TURN_SPACING_MANEUVER"
-        elif flight_path_angle < -12.0:
-            intent_flag = "EMERGENCY_DIVE_PROFILE"
-        return intent_flag
+        
+        """ GUARD 1: First packet seen (Initialize memory and exit) """
+        if icao not in self.history:
+            self.update_history(icao, current_track, current_baro_rate)
+            return "INITIALIZING_TRACK", 0.0, 0.0
+            
+        prev = self.history[icao]
+
+        """ 1. LATERAL MANEUVER MATHEMATICS (Turning Variants) """
+        delta_track = (current_track - prev["prev_track"] + 180.0) % 360.0 - 180.0
+        omega = (delta_track * 3.141592653589793 / 180.0) / self.dt
+        gs_mps = current_gs * 0.514444
+        a_lat_g = (gs_mps * omega) / self.G_METERS_SEC2
+
+        """ 2. VERTICAL PERFORMANCE MATHEMATICS (Pitch/Climb Variants) """
+        vh_mps_curr = current_baro_rate * (self.FT_TO_METERS / 60.0)
+        vh_mps_prev = prev["prev_baro_rate"] * (self.FT_TO_METERS / 60.0)
+        a_vert_g = (vh_mps_curr - vh_mps_prev) / (self.dt * self.G_METERS_SEC2)
+
+        """ Update memory for the next loop """
+        self.update_history(icao, current_track, current_baro_rate)
+
+        """ 3. INTENT CLASSIFICATION TREE (Else-Less Sequential Overrides) """
+        """ Default state assumed unless overridden by specific high-G maneuvers """
+        intent = "MAINTAINING_PROFILE"
+        
+        if a_lat_g > 0.18:
+            intent = "BANKING_RIGHT"
+        if a_lat_g < -0.18:
+            intent = "BANKING_LEFT"
+            
+        if a_vert_g > 0.25:
+            intent = "AGGRESSIVE_CLIMB"
+        if a_vert_g < -0.25:
+            intent = "AGGRESSIVE_DIVE"
+
+        return intent, round(float(a_lat_g), 15), round(float(a_vert_g), 15)

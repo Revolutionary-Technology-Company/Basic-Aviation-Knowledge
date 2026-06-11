@@ -1,6 +1,4 @@
 import datetime
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import telemetry_link
 from datetime import datetime, timedelta
@@ -21,7 +19,6 @@ except ImportError:
     import numpy as xp
     HAS_GPU = False
     print("CPU Fallback: Standard Vectorization Active (Performance)")
-import streamlit as st
 def calculate_future_position():
     now = telemetry_link.time_manager.get_now() 
     future = now + datetime.timedelta(hours=48)

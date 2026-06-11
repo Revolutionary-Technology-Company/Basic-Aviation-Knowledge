@@ -105,6 +105,52 @@ class VehicleSpecs(BaseModel):
 """ ===================================================================== """
 
 class WaypointManager:
+    """ MISSING KERNEL: Orbital Waypoint Loitering """
+    def generate_circular_pattern(self, center_lat, center_lon, radius_nm, waypoint_count=36):
+        """ Generates a high-fidelity circular orbit (The Big Circle) natively. """
+        
+        """ GUARD 1: Validate physical radius """
+        if radius_nm <= 0.0:
+            return []
+
+        """ GUARD 2: Prevent zero-division on waypoint geometry """
+        if waypoint_count <= 0:
+            waypoint_count = 36
+
+        path = []
+        
+        """ HAPPY PATH: Calculate angles seamlessly using array spaces """
+        theta = xp.linspace(0, 2 * math.pi, waypoint_count, endpoint=False)
+        
+        for angle in theta:
+            lat_offset = (radius_nm / 60.0) * math.cos(angle)
+            lon_offset = (radius_nm / 60.0) * math.sin(angle)
+            
+            path.append({
+                "lat": center_lat + lat_offset,
+                "lon": center_lon + lon_offset,
+                "alt": getattr(self, 'current_flight_level', 0.0),
+                "type": "HOLDING_POINT"
+            })
+            
+        return path
+
+
+    """ MISSING KERNEL: Kinematic Environmental Degradation """
+    def calculate_environmental_drift(self, v_current, v_wind, c_ice_penalty):
+        """ Calculates velocity degradation due to ice accumulation and wind shear. """
+        
+        """ GUARD: Prevent inverted physics from bad ice telemetry """
+        if c_ice_penalty < 0.0 or c_ice_penalty > 1.0:
+            c_ice_penalty = 0.0
+            
+        """ V_net = V_current + V_wind - (V_current * C_ice) """
+        v_net = []
+        for i in range(3):
+            net_axis = v_current[i] + v_wind[i] - (v_current[i] * c_ice_penalty)
+            v_net.append(net_axis)
+            
+        return v_net
     """ Manages FSM, Tactical Takeoff, Entry Control, and 3D Universal Routing. """
     
     def __init__(self, config_path="config.json", catalog_path="src/catalog-3.23.dat"):

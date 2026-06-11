@@ -138,18 +138,15 @@ def compute_atmospheric_attenuation(flux_toa_wm2, altitude_m):
     """
     Beer-Lambert Law: Calculates radiation surviving atmospheric absorption.
     """
-    # Guard 1: Above the Karman line (100km), no atmosphere to block radiation
     if altitude_m >= 100000.0:
         return flux_toa_wm2 
-        
-    # Guard 2: Prevent negative altitude physics errors
+
     if altitude_m <= 0.0:
         altitude_m = 0.0 
-        
-    # Calculate atmospheric depth (Scale height approximation ~8500m)
+
     depth = math.exp(-altitude_m / 8500.0)
     mu_attenuation = 0.005 # X-ray absorption coefficient
-    
+
     return flux_toa_wm2 * math.exp(-mu_attenuation * depth)
 
 @njit(fastmath=True)
@@ -167,10 +164,10 @@ def compute_radiation_interference(xray_flux_wm2, altitude_m):
     
     if xray_flux_wm2 <= baseline_flux:
         return 0.0
-        
+
     ratio = xray_flux_wm2 / baseline_flux
     interference = math.log10(ratio) / 4.0
-    
+
     return interference
 
 @njit(fastmath=True)
@@ -180,9 +177,9 @@ def compute_hull_radiative_cooling(temp_hull_k, emissivity, surface_area_m2):
     """
     if temp_hull_k <= 0.0 or surface_area_m2 <= 0.0 or emissivity <= 0.0:
         return 0.0
-        
+
     STEFAN_BOLTZMANN = 5.670374419e-8
-    
+
     return emissivity * STEFAN_BOLTZMANN * surface_area_m2 * (temp_hull_k ** 4)
 
 @njit(fastmath=True)
@@ -192,7 +189,7 @@ def get_flux_interference(telemetry_payload=None):
     """
     if not telemetry_payload:
         return 0.0 
-        
+
     alt_m = telemetry_payload.get('altitude_m', 0.0)
     xray_raw = telemetry_payload.get('xray_flux_wm2', 1e-8)
     

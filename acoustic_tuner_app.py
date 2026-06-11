@@ -6,14 +6,14 @@ Optimized specifically for simultaneous Max Power Output and Noise Cancellation.
 """
 from dynamic_memory_cache import DynamicMemoryCache
 shared_cache = DynamicMemoryCache(percentage=0.55)
-import pyaudio
+import numba
+from numba import njit
 import json
 import multiprocessing as mp
 import time
 import datetime
 import threading
-import numba
-from numba import njit
+import pyaudio
 try:
     import cupy as xp
     shared_cache = DynamicMemoryCache(percentage=0.12)

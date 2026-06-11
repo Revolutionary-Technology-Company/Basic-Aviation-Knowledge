@@ -35,6 +35,7 @@ def generate_pirep_data(live_data, user_inputs):
         f"Icing: {user_inputs['icing']}. Remarks: {user_inputs['remarks']}."
     )
     return pirep_string, spoken_version
+@njit(fastmath=True)
 def speak_pirep(text):
     """
     Uses system audio to read the report out loud.

@@ -1,14 +1,5 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import numba
-try:
-    import cupy as xp
-    HAS_GPU = True
-    print("NVIDIA CUDA Cores Engaged: Array Batching Active (Performance)")
-except ImportError:
-    import numpy as xp
-    HAS_GPU = False
-    print("CPU Fallback: Standard Vectorization Active (Performance)")
 from numba import njit
 import telemetry_link
 import datetime

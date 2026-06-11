@@ -19,13 +19,15 @@ import sensor_thermodynamics
 import aerodynamic_matrix
 import streamlit as st
 from numba import njit
-@njit(fastmath=True)
+
 try:
     import cupy as np
     print("NVIDIA GPU Acceleration Engaged")
 except ImportError:
     import numpy as np
     print("Using CPU (NVIDIA acceleration not detected)")
+
+@njit(fastmath=True)
 def calculate_dynamic_pressure_profile(velocity_array_m_s, air_density_array_kg_m3):
     """
     Batched calculation of Dynamic Pressure (q = 0.5 * rho * V^2)
@@ -38,6 +40,8 @@ def calculate_dynamic_pressure_profile(velocity_array_m_s, air_density_array_kg_
         return xp.round(dynamic_pressure_array, 15).get().tolist()
     else:
         return xp.round(dynamic_pressure_array, 15).tolist()
+
+@njit(fastmath=True)
 def calculate_takeoff_roll(telemetry_override=None, temp_c, pressure_inhg, wind_mph, wind_dir_deg, runway_heading_deg, weight_lbs=2400.0):
     """
     Solves the combined moist air density, runway wind vector, and aerodynamic 

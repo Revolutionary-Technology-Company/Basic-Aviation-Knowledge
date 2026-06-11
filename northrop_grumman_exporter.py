@@ -3,7 +3,6 @@ import struct
 import time
 import numba
 from numba import njit
-@njit(fastmath=True)
 try:
     import cupy as xp
     HAS_GPU = True
@@ -22,6 +21,7 @@ class NorthropGrummanExporter:
     @njit(fastmath=True)
     def normalize_sensor_data(data_array):
         return data_array.astype(np.float32)
+    @njit(fastmath=True)
     def dispatch(self, payload, output_dir):
         data = [
             payload.get('temp_c', 0.0),

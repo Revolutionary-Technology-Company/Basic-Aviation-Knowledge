@@ -1,7 +1,6 @@
 import numba
 from numba import njit
 import time
-@njit(fastmath=True)
 try:
     import cupy as xp
     HAS_GPU = True
@@ -16,6 +15,7 @@ class OAAMTelemetryExporter:
     Exports system topology for Plug & Fly discovery.
     Ensures avionics components can self-describe capabilities.
     """
+    @njit(fastmath=True)
     def dispatch(self, payload, output_dir):
         topology_snapshot = {
             "metadata": {

@@ -2,7 +2,6 @@ import logging
 from dynamic_memory_cache import DynamicMemoryCache
 shared_cache = DynamicMemoryCache(percentage=0.45)
 from numba import njit
-@njit(fastmath=True)
 import wind_dynamics
 import lunar_model
 import space_weather_engine
@@ -19,6 +18,7 @@ class IntruderIntentAnalyst:
     Isolated Telemetry Module. Tracks historical memory for individual aircraft 
     and handles the high-level kinematic math to diagnose pilot intent profiles.
     """
+    @njit(fastmath=True)
     def __init__(self, dt=1.0):
         self.dt = float(dt)
         self.G_METERS_SEC2 = 9.806650000000000
@@ -27,6 +27,7 @@ class IntruderIntentAnalyst:
         """ Memory storage dictionary per ICAO hex """
         self.history = {}
 
+    @njit(fastmath=True)
     def update_history(self, icao, track, baro_rate):
         """ Stores the current data state for derivative tracking on the next cycle. """
         self.history[icao] = {
@@ -34,6 +35,7 @@ class IntruderIntentAnalyst:
             "prev_baro_rate": float(baro_rate)
         }
 
+    @njit(fastmath=True)
     def diagnose_behavior_profile(self, icao, current_gs, current_track, current_baro_rate):
         """ 
         Executes second-order derivative checks using else-less guard clauses. 

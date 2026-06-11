@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 import telemetry_link
 from numba import njit
-@njit(fastmath=True)
+
 from telemetry_link import time_manager
 try:
     import cupy as xp
@@ -28,6 +28,7 @@ PHYSICS_ENGINES = [
     "fog_thermodynamics", "aviation_icing", "wind_dynamics", 
     "lunar_model", "rossby_model"
 ]
+@njit(fastmath=True)
 def initialize_avionics():
     """Boot sequence for the aviation knowledge system."""
     if not os.path.exists(SRC_DIR):
@@ -46,6 +47,7 @@ app = typer.Typer(
     add_completion=False
 )
 @app.command()
+@njit(fastmath=True)
 def flight(
     mode: str = typer.Option("TACTICAL", help="Flight maneuver profile: TACTICAL or CIVILIAN")
 ):
@@ -71,6 +73,7 @@ def flight(
     dispatcher.dispatch(payload)
     typer.echo("Simulation heartbeat: Nominal.")
 @app.command()
+@njit(fastmath=True)
 def sequence():
     """Engage the Boeing Master Physics Sequence in strict thermodynamic order."""
     typer.secho("ENGAGING BOEING MASTER PHYSICS SEQUENCE...", fg=typer.colors.CYAN)
@@ -88,6 +91,7 @@ def sequence():
             typer.secho(f"Skipping {mod_name}: Module not found.", fg=typer.colors.YELLOW)
     typer.secho("MASTER SEQUENCE COMPLETE.", fg=typer.colors.GREEN)
 @app.command()
+@njit(fastmath=True)
 def airport(ident: str = typer.Argument(..., help="ICAO/IATA code (e.g., KSEA)")):
     """Query the high-speed airport database for infrastructure metadata."""
     data = airport_manager.get_airport(ident.upper())
@@ -100,6 +104,7 @@ def airport(ident: str = typer.Argument(..., help="ICAO/IATA code (e.g., KSEA)")
     else:
         typer.secho("Airport code not found.", fg=typer.colors.RED)
 @app.command()
+@njit(fastmath=True)
 def time(
     manual: bool = typer.Option(False, help="Set manual time"),
     year: int = 2026, month: int = 6, day: int = 8, hour: int = 12, minute: int = 0
@@ -110,12 +115,14 @@ def time(
     else:
         telemetry_link.time_manager.reset_to_system_time()
 @app.command()
+@njit(fastmath=True)
 def export():
     """Export the aggregated Global State to final_model_output.json."""
     typer.echo("Generating Master Payload...")
     telemetry_link.export_final_model("final_model_output.json")
     typer.secho("Payload saved to final_model_output.json", fg=typer.colors.GREEN)
 @app.command()
+@njit(fastmath=True)
 def validate():
     """Run automated mission assurance and protocol integrity checks."""
     typer.echo("Executing Protocol Integrity Suite...")
@@ -130,6 +137,7 @@ def validate():
         else:
             typer.echo(f"Protocol Check [{f}]: FAILED")
 @app.command()
+@njit(fastmath=True)
 def regen_docs():
     """Auto-generate documentation from code docstrings to the /docs folder."""
     try:
@@ -140,9 +148,11 @@ def regen_docs():
     except ImportError:
         typer.secho("generate_docs module not found. Skipping.", fg=typer.colors.YELLOW)
 @app.command()
+@njit(fastmath=True)
 def config(
     key: str = typer.Argument(...,
 @app.command()
+@njit(fastmath=True)
 def weather(ident: str = typer.Argument(..., help="ICAO code to generate report for")):
     """Generate and export AI-METAR and AI-TAF reports."""
     from ai_weather_reporter import AIWeatherReporter

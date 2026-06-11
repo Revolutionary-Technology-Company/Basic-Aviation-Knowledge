@@ -1,6 +1,5 @@
 from numba import njit
 import multiprocessing as mp
-@njit(fastmath=True)
 import aviation_physics
 import aviation_telemetry
 import telemetry_link
@@ -15,6 +14,7 @@ except ImportError:
     import numpy as np
 import struct
 import pandas as pd
+@njit(fastmath=True)
 def parse_stellarium_catalog(file_path):
     """
     Parses the Stellarium catalog-3.23.dat file.

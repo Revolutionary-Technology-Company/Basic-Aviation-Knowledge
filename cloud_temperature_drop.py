@@ -42,6 +42,8 @@ def compute_adiabatic_temperature_drop(t_surface_k, altitude_m, is_saturated):
     
     """ HAPPY PATH: Dry adiabatic cooling """
     return t_surface_k - (DRY_LAPSE_RATE * altitude_m)
+
+@njit(fastmath=True)
 def calculate_radiative_cooling_grid(
     lwp_array_g_m2, t_start_c_array, cloud_fraction_array, hours=12.0
 ):
@@ -71,6 +73,8 @@ def calculate_radiative_cooling_grid(
             "final_t": xp.round(final_temp, 15).tolist(),
             "net_flux": xp.round(net_flux, 15).tolist()
         }
+
+@njit(fastmath=True)
 def run_cloud_temp_layer(telemetry_override=None):
     """Main orchestration function reporting to Boeing payload."""
     print("☁️ Running Batched Cloud Radiative Cooling Layer...")

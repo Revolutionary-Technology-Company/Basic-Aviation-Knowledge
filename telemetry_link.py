@@ -1,6 +1,5 @@
 import numba
 from numba import njit
-@njit(fastmath=True)
 try:
     import cupy as np
     print("NVIDIA GPU Acceleration Engaged")
@@ -9,15 +8,19 @@ except ImportError:
     print("Using CPU (NVIDIA acceleration not detected)")
 import datetime
 class TimeManager:
+    @njit(fastmath=True)
     def __init__(self):
         self._manual_time = None
+    @njit(fastmath=True)
     def get_now(self):
         """Returns either the manual planning time or current UTC system time."""
         return self._manual_time if self._manual_time else datetime.datetime.utcnow()
+    @njit(fastmath=True)
     def set_manual_time(self, year, month, day, hour, minute):
         """Sets a manual override for mission planning."""
         self._manual_time = datetime.datetime(year, month, day, hour, minute)
         print(f"[SYSTEM] Time locked to: {self._manual_time} UTC")
+    @njit(fastmath=True)
     def reset_to_system_time(self):
         """Resets to real-time synchronization."""
         self._manual_time = None
@@ -43,6 +46,7 @@ GLOBAL_MODEL_STATE = {
     "atmospheric_models": {},
     "navigation": {}
 }
+@njit(fastmath=True)
 def update_global_state(category, data_key, value):
     """
     Unified entry point for all physics engines (Rossby, Fog, Icing, etc.)
@@ -50,6 +54,7 @@ def update_global_state(category, data_key, value):
     """
     if category in GLOBAL_MODEL_STATE:
         GLOBAL_MODEL_STATE[category][data_key] = value
+@njit(fastmath=True)
 def export_final_model(filename="final_model_output.json"):
     """
     Boeing integration: Aggregates the full state of all physics models

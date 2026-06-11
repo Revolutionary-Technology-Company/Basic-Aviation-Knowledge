@@ -20,6 +20,28 @@ except ImportError:
     import numpy as xp
     HAS_GPU = False
     print("CPU Fallback: Standard Vectorization Active (Performance)")
+""" MISSING KERNEL: cloud_temperature_drop.py """
+from numba import njit
+import math
+
+@njit(fastmath=True)
+def compute_adiabatic_temperature_drop(t_surface_k, altitude_m, is_saturated):
+    """ Calculates temperature drop due to atmospheric lifting (Lapse Rate). """
+    
+    """ GUARD 1: Below sea level or negative Kelvin """
+    if altitude_m <= 0.0 or t_surface_k <= 0.0:
+        return t_surface_k
+        
+    """ Constants for lapse rates (Kelvin drop per meter) """
+    DRY_LAPSE_RATE = 0.0098
+    WET_LAPSE_RATE = 0.005
+    
+    """ GUARD 2: Saturated (Wet) air cools slower because condensation releases heat """
+    if is_saturated:
+        return t_surface_k - (WET_LAPSE_RATE * altitude_m)
+    
+    """ HAPPY PATH: Dry adiabatic cooling """
+    return t_surface_k - (DRY_LAPSE_RATE * altitude_m)
 def calculate_radiative_cooling_grid(
     lwp_array_g_m2, t_start_c_array, cloud_fraction_array, hours=12.0
 ):

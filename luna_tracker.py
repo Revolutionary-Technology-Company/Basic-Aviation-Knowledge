@@ -1,6 +1,5 @@
 import numba
 from numba import njit
-@njit(fastmath=True)
 import astropy.coordinates as coord
 import astropy.units as u
 from astropy.time import Time
@@ -8,7 +7,6 @@ now = time_manager.get_now()
 import datetime
 from datetime import datetime, timedelta
 import multiprocessing as mp
-import numpy as np
 try:
     import cupy as xp
     HAS_GPU = True
@@ -17,7 +15,6 @@ except ImportError:
     import numpy as xp
     HAS_GPU = False
     print("CPU Fallback: Standard Vectorization Active (Performance)")
-import pandas as pd
 import matplotlib.pyplot as plt
 import telemetry_link
 from telemetry_link import time_manager
@@ -26,10 +23,12 @@ import aviation_telemetry
 import aircraft_perf
 import sensor_thermodynamics
 import aerodynamic_matrix
+@njit(fastmath=True)
 def calculate_future_position():
     now = telemetry_link.time_manager.get_now() 
     future = now + datetime.timedelta(hours=48)
     return future
+@njit(fastmath=True)
 def get_user_inputs(telemetry_override=None):
     """Prompts the user for decimal GPS values and year via terminal input."""
     print("--- Local Lunar Path Calculator Configuration ---")
@@ -51,6 +50,7 @@ import streamlit as st
     except ValueError as e:
         print(f"\n[Input Error]: {e}. Please enter valid numbers.")
         exit(1)
+@njit(fastmath=True)
 def calculate_lunar_path(year, lat, lon, elevation_m):
     """Calculates the Moon's local horizon coordinates using Astropy
     based on the user's custom decimal GPS input.

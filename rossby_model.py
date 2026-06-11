@@ -8,15 +8,13 @@ except ImportError:
     HAS_GPU = False
     print("CPU Fallback: Standard Vectorization Active")
 import multiprocessing as mp
-import numpy as np # Fallback to standard CPU math
-import pandas as pd
 import matplotlib.pyplot as plt
-import telemetry_link          # NEW: Integrated Centralized Data Bus
-import aviation_physics        # Core math
-import aviation_telemetry      # Data flow
-import aircraft_perf           # Performance calculations
-import sensor_thermodynamics   # Env data scaling
-import aerodynamic_matrix      # Lift/Drag logic
+import telemetry_link
+import aviation_physics
+import aviation_telemetry
+import aircraft_perf
+import sensor_thermodynamics
+import aerodynamic_matrix
 import streamlit as st
 import numba
 from numba import njit
@@ -48,6 +46,7 @@ def calculate_rossby_grid_kinematics(latitude_array_deg, zonal_wind_array_m_s, w
             "phase_speed_m_s": xp.round(phase_speed_array, 15).tolist(),
             "migration_km_day": xp.round(migration_rate_array, 15).tolist()
         }
+@njit(fastmath=True)
 def calculate_rossby_kinematics(u_zonal, station_lat_deg, wave_number, is_zonal_regime):
     """
     Core Mathematical Engine: Highly optimized C-compiled solver for 
@@ -69,6 +68,7 @@ def calculate_rossby_kinematics(u_zonal, station_lat_deg, wave_number, is_zonal_
     phase_speed_c = u_adjusted - (beta_planetary / denominator)
     progression_rate_km_day = phase_speed_c * 3.6 * 24.0
     return beta_planetary, wavelength_x, u_adjusted, phase_speed_c, progression_rate_km_day
+@njit(fastmath=True)
 def run_rossby_layer(telemetry_override=None):
     """
     Main orchestration function. Extracts live telemetry, runs the high-performance

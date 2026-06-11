@@ -35,49 +35,64 @@ except ImportError:
 """ ===================================================================== """
 
 @njit(fastmath=True)
-def compute_moist_air_density(pressure_hpa, temp_c, relative_humidity_pct):
-    """ Dynamic Moist Air Density (rho) using precise gas constants. """
-    """ Equation: rho = (p_d / R_d*T) + (p_v / R_v*T) """
+def compute_moist_air_density(temp_k, pressure_hpa, relative_humidity_pct):
+    """Calculates true atmospheric density (Rho) using live NOAA USCRN data."""
     
-    """ GUARD 1: Extreme Altitude Drop-off (Vacuum) """
-    if pressure_hpa <= 0.0:
+    """Guard: Absolute zero or vacuum pressure"""
+    if temp_k <= 0.0 or pressure_hpa <= 0.0:
         return 0.0
-
-    """ HAPPY PATH: Thermodynamic calculation """
-    temp_k = temp_c + 273.15
-    r_d = 287.058
-    """ Gas constant for dry air """
-    r_v = 461.495
-    """ Gas constant for water vapor """
-
-    """ Calculate vapor pressure using Tetens equation approximation """
-    vapor_pressure_hpa = (relative_humidity_pct / 100.0) * 6.1078 * math.exp((17.27 * temp_c) / (temp_c + 237.3))
-    dry_pressure_hpa = pressure_hpa - vapor_pressure_hpa
-
-    """ Convert hPa to Pascals for standard physics units """
-    dry_pressure_pa = dry_pressure_hpa * 100.0
-    vapor_pressure_pa = vapor_pressure_hpa * 100.0
-
-    rho_dry = dry_pressure_pa / (r_d * temp_k)
-    rho_vapor = vapor_pressure_pa / (r_v * temp_k)
-
-    return rho_dry + rho_vapor
+        
+    """Constants"""
+    R_d = 287.058 
+    R_v = 461.495 
+    
+    """Calculate Vapor Pressure (Tetens Equation approximation)"""
+    temp_c = temp_k - 273.15
+    es = 6.1078 * math.exp((17.27 * temp_c) / (temp_c + 237.3))
+    vapor_pressure = (relative_humidity_pct / 100.0) * es
+    
+    dry_pressure = pressure_hpa - vapor_pressure
+    
+    """Ideal Gas Law for Moist Air"""
+    density = (dry_pressure * 100.0) / (R_d * temp_k) + (vapor_pressure * 100.0) / (R_v * temp_k)
+    
+    return density
 
 
 @njit(fastmath=True)
-def calculate_fundamental_lift(density_kgm3, velocity_mps, wing_area_m2, cl):
-    """ The Fundamental Lift Equation """
-    """ Equation: L = 0.5 * rho * V^2 * S * C_L """
+def compute_fundamental_lift(density, velocity_mps, surface_area_m2, coefficient_of_lift):
+    """The master aerodynamic equation: L = 1/2 * rho * V^2 * S * C_L"""
     
-    """ GUARD 1: Aircraft is stationary or in vacuum """
-    if velocity_mps <= 0.0 or density_kgm3 <= 0.0:
+    """Guard: No airspeed or flying in a vacuum yields zero lift"""
+    if velocity_mps <= 0.0 or density <= 0.0:
         return 0.0
+        
+    return 0.5 * density * (velocity_mps ** 2) * surface_area_m2 * coefficient_of_lift
 
-    """ HAPPY PATH """
-    dynamic_pressure = 0.5 * density_kgm3 * (velocity_mps ** 2)
-    lift_newtons = dynamic_pressure * wing_area_m2 * cl
+
+@njit(fastmath=True)
+def compute_deceleration_distance_nm(cruise_speed_kias, target_speed_kias):
+    """Calculates distance required to slow down before a holding fix (10 kts per nm)."""
     
-    return lift_newtons
+    """Guard: Already at or below target speed"""
+    if cruise_speed_kias <= target_speed_kias:
+        return 0.0
+        
+    return (cruise_speed_kias - target_speed_kias) / 10.0
+
+
+@njit(fastmath=True)
+def compute_holding_entry_delta(heading_approach_deg, course_outbound_deg):
+    """Calculates the geometric delta to determine Direct, Teardrop, or Parallel holding entry."""
+    
+    """Calculate absolute circular difference"""
+    delta = (heading_approach_deg - course_outbound_deg) % 360.0
+    
+    """Guard: Python modulo can sometimes yield negative on negative inputs"""
+    if delta < 0.0:
+        delta += 360.0
+        
+    return delta
 
 
 @njit(fastmath=True)

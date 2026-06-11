@@ -1,5 +1,4 @@
 import multiprocessing as mp
-import pandas as pd
 import matplotlib.pyplot as plt
 install numba
 import csv
@@ -8,7 +7,6 @@ import aviation_telemetry
 import aircraft_perf
 import sensor_thermodynamics
 import aerodynamic_matrix
-import streamlit as st
 try:
     import cupy as xp
     HAS_GPU = True
